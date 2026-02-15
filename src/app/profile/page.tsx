@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
 import { getCurrentUser, setCurrentUser, getWorkouts, getUserById, seedDemoData } from "@/lib/storage";
 import { User, WorkoutSession } from "@/types";
@@ -229,9 +230,9 @@ export default function ProfilePage() {
           ) : (
             <p className="text-gray-500 text-sm">
               No friends yet. Add friends on the{" "}
-              <a href="/leaderboard" className="text-blue-400 hover:underline">
+              <Link href="/leaderboard" className="text-blue-400 hover:underline">
                 leaderboard page
-              </a>
+              </Link>
               .
             </p>
           )}
