@@ -25,10 +25,10 @@ const NAV_ITEMS = [
   },
   {
     href: "/leaderboard",
-    label: "Leaderboard",
+    label: "Ranks",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0 1 16.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m4.562-6.492C15.408 5.135 12 7.26 12 7.26s-3.408-2.125-6.832-3.996" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
       </svg>
     ),
   },
@@ -47,12 +47,14 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur border-t border-gray-800 md:top-0 md:bottom-auto md:border-t-0 md:border-b">
-      <div className="max-w-4xl mx-auto px-4">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-white/5 md:top-0 md:bottom-auto md:border-t-0 md:border-b md:border-white/5">
+      <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center justify-around md:justify-start md:gap-1 h-16">
+          {/* Logo */}
           <Link href="/" className="hidden md:flex items-center gap-2 mr-8">
-            <span className="text-xl font-bold text-white">PushUp</span>
-            <span className="text-xl font-bold text-blue-500">Pro</span>
+            <span className="text-2xl font-black tracking-tighter text-white">
+              DR<span className="text-drop-500">O</span>P
+            </span>
           </Link>
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;
@@ -60,14 +62,16 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 px-3 py-2 rounded-xl transition ${
+                className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 px-3 py-2 rounded-xl transition-all ${
                   active
-                    ? "text-blue-500 bg-blue-500/10"
-                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                    ? "text-white bg-drop-600/15"
+                    : "text-neutral-500 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {item.icon}
-                <span className="text-xs md:text-sm font-medium">{item.label}</span>
+                <span className={`text-xs md:text-sm ${active ? "font-semibold" : "font-medium"}`}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}

@@ -34,7 +34,6 @@ export default function WorkoutPage() {
     seedDemoData();
   }, []);
 
-  // Timer
   useEffect(() => {
     if (isActive) {
       setElapsed(0);
@@ -54,7 +53,6 @@ export default function WorkoutPage() {
 
   const handleUpdate = useCallback((state: PushupState) => {
     setPushupState(state);
-    // Flash animation on new rep
     if (state.count > prevCountRef.current) {
       prevCountRef.current = state.count;
     }
@@ -111,10 +109,18 @@ export default function WorkoutPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-6">Workout</h1>
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="flex items-center gap-3 mb-6">
+        <h1 className="text-2xl font-black text-white tracking-tight">Workout</h1>
+        {isActive && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-drop-600/15 text-drop-400 text-xs font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-drop-500 animate-pulse" />
+            LIVE
+          </span>
+        )}
+      </div>
 
-      <div className="grid lg:grid-cols-[1fr,320px] gap-6">
+      <div className="grid lg:grid-cols-[1fr,300px] gap-4">
         {/* Camera feed */}
         <div>
           {isActive ? (
@@ -124,31 +130,33 @@ export default function WorkoutPage() {
               onSessionEnd={handleSessionEnd}
             />
           ) : (
-            <div className="aspect-[4/3] bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-700 flex flex-col items-center justify-center p-8">
-              <svg
-                className="w-20 h-20 text-gray-600 mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"
-                />
-              </svg>
-              <h2 className="text-xl font-semibold text-gray-300 mb-2">
-                Ready to Start?
-              </h2>
-              <p className="text-gray-500 text-center mb-2">
+            <div className="aspect-[4/3] drop-card rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center p-8">
+              <div className="w-16 h-16 rounded-2xl bg-drop-600/10 flex items-center justify-center mb-4">
+                <svg
+                  className="w-8 h-8 text-drop-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-lg font-bold text-white mb-2">Ready?</h2>
+              <p className="text-neutral-500 text-sm text-center mb-1">
                 Position your device so your full body is visible from the side.
               </p>
-              <ul className="text-gray-500 text-sm space-y-1 mb-6">
-                <li>&#x2022; Place your device 4-8 feet away</li>
-                <li>&#x2022; Ensure good lighting</li>
-                <li>&#x2022; Side angle works best</li>
-              </ul>
+              <div className="flex flex-wrap justify-center gap-2 mt-4">
+                {["4-8 feet away", "Good lighting", "Side angle"].map((tip) => (
+                  <span key={tip} className="px-3 py-1 bg-white/5 rounded-full text-neutral-400 text-xs">
+                    {tip}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
@@ -157,16 +165,16 @@ export default function WorkoutPage() {
             {!isActive ? (
               <button
                 onClick={handleStart}
-                className="px-12 py-4 bg-blue-600 text-white text-xl font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-600/25"
+                className="px-14 py-4 bg-drop-600 text-white text-lg font-black rounded-xl hover:bg-drop-700 transition drop-glow uppercase tracking-wider"
               >
-                Start Workout
+                Drop
               </button>
             ) : (
               <button
                 onClick={handleStop}
-                className="px-12 py-4 bg-red-600 text-white text-xl font-bold rounded-2xl hover:bg-red-700 transition shadow-lg shadow-red-600/25"
+                className="px-14 py-4 bg-neutral-800 text-white text-lg font-bold rounded-xl hover:bg-neutral-700 transition border border-white/10 uppercase tracking-wider"
               >
-                End Workout
+                End
               </button>
             )}
           </div>
@@ -176,34 +184,27 @@ export default function WorkoutPage() {
         <div className="lg:sticky lg:top-24">
           <WorkoutHUD state={pushupState} elapsed={elapsed} isActive={isActive} />
 
-          {/* Tips when not active */}
           {!isActive && (
-            <div className="mt-4 bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
-              <h3 className="text-white font-semibold mb-2">Tips for Accuracy</h3>
-              <ul className="text-gray-400 text-sm space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">&#x2713;</span>
-                  Use a side-angle camera position
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">&#x2713;</span>
-                  Ensure your full body is in frame
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">&#x2713;</span>
-                  Good lighting improves detection
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">&#x2713;</span>
-                  Go all the way down and all the way up
-                </li>
+            <div className="mt-4 drop-card rounded-xl p-4">
+              <h3 className="text-white font-semibold text-xs uppercase tracking-wider mb-3">Tips</h3>
+              <ul className="text-neutral-500 text-xs space-y-2">
+                {[
+                  "Side-angle camera works best",
+                  "Ensure full body is in frame",
+                  "Good lighting improves accuracy",
+                  "Go all the way down & up",
+                ].map((tip) => (
+                  <li key={tip} className="flex items-start gap-2">
+                    <span className="text-drop-500 mt-0.5 text-[10px]">&#x25CF;</span>
+                    {tip}
+                  </li>
+                ))}
               </ul>
             </div>
           )}
         </div>
       </div>
 
-      {/* Summary modal */}
       {showSummary && sessionResult && (
         <WorkoutSummary
           count={sessionResult.count}

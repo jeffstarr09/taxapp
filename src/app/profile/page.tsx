@@ -7,8 +7,8 @@ import { getCurrentUser, setCurrentUser, getWorkouts, getUserById, seedDemoData 
 import { User, WorkoutSession } from "@/types";
 
 const AVATAR_COLORS = [
-  "#3b82f6", "#8b5cf6", "#ec4899", "#ef4444", "#f97316",
-  "#eab308", "#22c55e", "#06b6d4", "#6366f1", "#a855f7",
+  "#dc2626", "#ef4444", "#f97316", "#eab308", "#22c55e",
+  "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff",
 ];
 
 export default function ProfilePage() {
@@ -50,7 +50,7 @@ export default function ProfilePage() {
       return;
     }
     if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
-      setError("Username can only contain lowercase letters, numbers, and underscores");
+      setError("Lowercase letters, numbers, and underscores only");
       return;
     }
 
@@ -77,16 +77,19 @@ export default function ProfilePage() {
       : 0;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-6">Profile</h1>
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <h1 className="text-2xl font-black text-white tracking-tight mb-6">Profile</h1>
 
       {/* Profile form */}
-      <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700/50 mb-8">
+      <div className="drop-card rounded-2xl p-6 mb-8">
         {/* Avatar preview */}
         <div className="flex justify-center mb-6">
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg"
-            style={{ backgroundColor: selectedColor }}
+            className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black shadow-lg"
+            style={{
+              backgroundColor: selectedColor,
+              color: selectedColor === "#ffffff" ? "#0a0a0a" : "#ffffff",
+            }}
           >
             {displayName ? displayName.charAt(0).toUpperCase() : "?"}
           </div>
@@ -98,8 +101,10 @@ export default function ProfilePage() {
             <button
               key={color}
               onClick={() => setSelectedColor(color)}
-              className={`w-8 h-8 rounded-full transition-transform ${
-                selectedColor === color ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110" : "hover:scale-110"
+              className={`w-7 h-7 rounded-full transition-all ${
+                selectedColor === color
+                  ? "ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0a] scale-110"
+                  : "hover:scale-110 opacity-70 hover:opacity-100"
               }`}
               style={{ backgroundColor: color }}
             />
@@ -107,31 +112,31 @@ export default function ProfilePage() {
         </div>
 
         {/* Fields */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <label className="block text-gray-400 text-sm mb-1">Username</label>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-1.5">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               placeholder="your_username"
-              className="w-full px-4 py-3 bg-gray-700 text-white rounded-xl border border-gray-600 focus:border-blue-500 focus:outline-none placeholder-gray-400"
+              className="w-full px-3 py-2.5 bg-neutral-800 text-white rounded-lg border border-white/5 focus:border-drop-600 focus:outline-none placeholder-neutral-600 text-sm"
             />
           </div>
           <div>
-            <label className="block text-gray-400 text-sm mb-1">Display Name</label>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-1.5">Display Name</label>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your Name"
-              className="w-full px-4 py-3 bg-gray-700 text-white rounded-xl border border-gray-600 focus:border-blue-500 focus:outline-none placeholder-gray-400"
+              className="w-full px-3 py-2.5 bg-neutral-800 text-white rounded-lg border border-white/5 focus:border-drop-600 focus:outline-none placeholder-neutral-600 text-sm"
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-drop-400 text-xs">{error}</p>}
           <button
             onClick={handleSave}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold"
+            className="w-full px-6 py-3 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-bold text-sm"
           >
             {user ? "Update Profile" : "Create Profile"}
           </button>
@@ -141,60 +146,59 @@ export default function ProfilePage() {
       {/* Stats */}
       {user && (
         <>
-          <h2 className="text-xl font-bold text-white mb-4">Your Stats</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/50">
-              <p className="text-2xl font-bold text-white">{totalPushups.toLocaleString()}</p>
-              <p className="text-gray-400 text-xs mt-1">Total Reps</p>
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Stats</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
+            <div className="drop-card rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-white">{totalPushups.toLocaleString()}</p>
+              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Total Reps</p>
             </div>
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/50">
-              <p className="text-2xl font-bold text-white">{workouts.length}</p>
-              <p className="text-gray-400 text-xs mt-1">Workouts</p>
+            <div className="drop-card rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-white">{workouts.length}</p>
+              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Workouts</p>
             </div>
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/50">
-              <p className="text-2xl font-bold text-white">
+            <div className="drop-card rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-white">
                 {workouts.reduce((max, w) => Math.max(max, w.count), 0)}
               </p>
-              <p className="text-gray-400 text-xs mt-1">Best Session</p>
+              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Best</p>
             </div>
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/50">
-              <p className="text-2xl font-bold text-white">{avgForm}%</p>
-              <p className="text-gray-400 text-xs mt-1">Avg Form</p>
+            <div className="drop-card rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-white">{avgForm}%</p>
+              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Avg Form</p>
             </div>
           </div>
 
           {/* Recent workouts */}
           {workouts.length > 0 && (
             <>
-              <h2 className="text-xl font-bold text-white mb-4">Recent Workouts</h2>
-              <div className="space-y-2 mb-8">
+              <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Recent</h2>
+              <div className="space-y-1.5 mb-8">
                 {workouts
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, 10)
                   .map((workout) => (
                     <div
                       key={workout.id}
-                      className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl border border-gray-700/50"
+                      className="flex items-center justify-between p-3.5 drop-card rounded-xl"
                     >
                       <div>
-                        <p className="text-white font-semibold">{workout.count} push-ups</p>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-white font-bold text-sm">{workout.count} reps</p>
+                        <p className="text-neutral-600 text-xs">
                           {new Date(workout.date).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                            year: "numeric",
                           })}
                         </p>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <p className="text-white text-sm">{workout.averageFormScore}% form</p>
-                          <p className="text-gray-500 text-xs">
+                          <p className="text-white text-xs font-medium">{workout.averageFormScore}%</p>
+                          <p className="text-neutral-600 text-[10px]">
                             {Math.floor(workout.duration / 60)}:{(workout.duration % 60).toString().padStart(2, "0")}
                           </p>
                         </div>
                         {workout.verified && (
-                          <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <svg className="w-4 h-4 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                           </svg>
                         )}
@@ -205,33 +209,35 @@ export default function ProfilePage() {
             </>
           )}
 
-          {/* Friends list */}
-          <h2 className="text-xl font-bold text-white mb-4">Friends ({friends.length})</h2>
+          {/* Friends */}
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+            Friends ({friends.length})
+          </h2>
           {friends.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {friends.map((friend) => (
                 <div
                   key={friend.id}
-                  className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-xl border border-gray-700/50"
+                  className="flex items-center gap-3 p-3 drop-card rounded-xl"
                 >
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
                     style={{ backgroundColor: friend.avatarColor }}
                   >
                     {friend.displayName.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-white font-medium">{friend.displayName}</p>
-                    <p className="text-gray-500 text-sm">@{friend.username}</p>
+                    <p className="text-white font-medium text-sm">{friend.displayName}</p>
+                    <p className="text-neutral-600 text-xs">@{friend.username}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-sm">
+            <p className="text-neutral-600 text-sm">
               No friends yet. Add friends on the{" "}
-              <Link href="/leaderboard" className="text-blue-400 hover:underline">
-                leaderboard page
+              <Link href="/leaderboard" className="text-drop-500 hover:underline">
+                leaderboard
               </Link>
               .
             </p>

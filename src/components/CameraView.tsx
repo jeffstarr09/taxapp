@@ -47,9 +47,11 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
     canvas.height = video.videoHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw skeleton connections
-    ctx.strokeStyle = "#3b82f6";
+    // Draw skeleton connections in red
+    ctx.strokeStyle = "#dc2626";
     ctx.lineWidth = 3;
+    ctx.shadowColor = "#dc2626";
+    ctx.shadowBlur = 8;
     SKELETON_CONNECTIONS.forEach(([from, to]) => {
       const fromKp = keypoints.find((kp) => kp.name === from);
       const toKp = keypoints.find((kp) => kp.name === to);
@@ -60,15 +62,16 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
         ctx.stroke();
       }
     });
+    ctx.shadowBlur = 0;
 
     // Draw keypoints
     keypoints.forEach((kp) => {
       if (kp.score > 0.3) {
         ctx.beginPath();
-        ctx.arc(kp.x, kp.y, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = kp.score > 0.6 ? "#22c55e" : "#eab308";
+        ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = kp.score > 0.6 ? "#ffffff" : "#fca5a5";
         ctx.fill();
-        ctx.strokeStyle = "#ffffff";
+        ctx.strokeStyle = "#dc2626";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -125,7 +128,7 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
       setError(
         err instanceof Error
           ? err.message.includes("Permission")
-            ? "Camera access denied. Please allow camera access to count push-ups."
+            ? "Camera access denied. Allow camera access to track push-ups."
             : `Camera error: ${err.message}`
           : "Failed to access camera"
       );
@@ -180,11 +183,11 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-900 rounded-2xl p-8">
-        <div className="text-red-400 text-lg mb-4 text-center">{error}</div>
+      <div className="flex flex-col items-center justify-center h-full bg-neutral-900 rounded-2xl p-8 border border-white/5">
+        <div className="text-drop-400 text-lg mb-4 text-center">{error}</div>
         <button
           onClick={startCamera}
-          className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+          className="px-6 py-3 bg-drop-600 text-white rounded-xl hover:bg-drop-700 transition font-semibold"
         >
           Try Again
         </button>
@@ -193,17 +196,17 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
   }
 
   return (
-    <div className="relative w-full aspect-[4/3] bg-gray-900 rounded-2xl overflow-hidden">
+    <div className="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-white/5">
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-gray-900/90">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-white text-lg">Loading pose detection...</p>
-          <p className="text-gray-400 text-sm mt-2">This may take a moment on first load</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/90">
+          <div className="w-12 h-12 border-3 border-drop-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-white text-lg font-medium">Loading AI model...</p>
+          <p className="text-neutral-500 text-sm mt-2">First load takes a moment</p>
         </div>
       )}
       <video
         ref={videoRef}
-        className="w-full h-full object-cover mirror"
+        className="w-full h-full object-cover"
         playsInline
         muted
         style={{ transform: "scaleX(-1)" }}
