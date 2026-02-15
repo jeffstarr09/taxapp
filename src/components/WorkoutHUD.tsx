@@ -18,70 +18,83 @@ function getFormColor(score: number): string {
   if (score >= 80) return "text-green-400";
   if (score >= 60) return "text-yellow-400";
   if (score >= 40) return "text-orange-400";
-  return "text-red-400";
+  return "text-drop-400";
 }
 
-function getFormBgColor(score: number): string {
+function getFormBarColor(score: number): string {
   if (score >= 80) return "bg-green-500";
   if (score >= 60) return "bg-yellow-500";
   if (score >= 40) return "bg-orange-500";
-  return "bg-red-500";
+  return "bg-drop-500";
 }
 
-function getPhaseIndicator(phase: string): { label: string; color: string } {
+function getPhaseClass(phase: string): string {
   switch (phase) {
     case "down":
-      return { label: "DOWN", color: "bg-blue-500" };
+      return "phase-down";
     case "up":
-      return { label: "UP", color: "bg-green-500" };
+      return "phase-up";
     default:
-      return { label: "MOVING", color: "bg-yellow-500" };
+      return "phase-transition";
+  }
+}
+
+function getPhaseLabel(phase: string): string {
+  switch (phase) {
+    case "down":
+      return "DOWN";
+    case "up":
+      return "UP";
+    default:
+      return "MOVING";
   }
 }
 
 export default function WorkoutHUD({ state, elapsed, isActive }: WorkoutHUDProps) {
-  const phaseInfo = getPhaseIndicator(state.phase);
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Main counter */}
-      <div className="bg-gray-800/90 backdrop-blur rounded-2xl p-6 text-center">
-        <p className="text-gray-400 text-sm uppercase tracking-wider mb-1">Push-ups</p>
-        <p className="text-7xl font-bold text-white tabular-nums">{state.count}</p>
+      <div className="drop-card rounded-2xl p-6 text-center">
+        <p className="text-neutral-500 text-xs uppercase tracking-[0.2em] font-medium mb-2">Reps</p>
+        <p className="text-8xl font-black text-white tabular-nums tracking-tighter drop-text-glow">
+          {state.count}
+        </p>
         {isActive && (
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <span className={`inline-block w-2 h-2 rounded-full ${phaseInfo.color} animate-pulse`} />
-            <span className="text-gray-400 text-sm">{phaseInfo.label}</span>
+          <div className="mt-3 flex items-center justify-center">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getPhaseClass(state.phase)}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              {getPhaseLabel(state.phase)}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Stats grid */}
+      {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gray-800/90 backdrop-blur rounded-xl p-4 text-center">
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Time</p>
-          <p className="text-2xl font-semibold text-white tabular-nums">
+        <div className="drop-card rounded-xl p-4 text-center">
+          <p className="text-neutral-500 text-xs uppercase tracking-[0.15em] mb-1">Time</p>
+          <p className="text-2xl font-bold text-white tabular-nums">
             {formatTime(elapsed)}
           </p>
         </div>
-        <div className="bg-gray-800/90 backdrop-blur rounded-xl p-4 text-center">
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Form</p>
-          <p className={`text-2xl font-semibold ${getFormColor(state.formScore)} tabular-nums`}>
-            {state.formScore > 0 ? `${state.formScore}%` : "—"}
+        <div className="drop-card rounded-xl p-4 text-center">
+          <p className="text-neutral-500 text-xs uppercase tracking-[0.15em] mb-1">Form</p>
+          <p className={`text-2xl font-bold ${getFormColor(state.formScore)} tabular-nums`}>
+            {state.formScore > 0 ? `${state.formScore}%` : "--"}
           </p>
         </div>
       </div>
 
       {/* Form bar */}
       {state.formScore > 0 && (
-        <div className="bg-gray-800/90 backdrop-blur rounded-xl p-4">
-          <div className="flex justify-between text-xs text-gray-400 mb-2">
-            <span>Form Quality</span>
-            <span>{state.formScore}%</span>
+        <div className="drop-card rounded-xl p-4">
+          <div className="flex justify-between text-xs text-neutral-500 mb-2">
+            <span className="uppercase tracking-wider">Form Quality</span>
+            <span className="font-medium text-white">{state.formScore}%</span>
           </div>
-          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
             <div
-              className={`h-full ${getFormBgColor(state.formScore)} rounded-full transition-all duration-300`}
+              className={`h-full ${getFormBarColor(state.formScore)} rounded-full transition-all duration-300`}
               style={{ width: `${state.formScore}%` }}
             />
           </div>
@@ -90,16 +103,16 @@ export default function WorkoutHUD({ state, elapsed, isActive }: WorkoutHUDProps
 
       {/* Feedback */}
       {isActive && state.feedback && (
-        <div className="bg-gray-800/90 backdrop-blur rounded-xl p-4">
-          <p className="text-gray-300 text-sm text-center">{state.feedback}</p>
+        <div className="drop-card rounded-xl p-4">
+          <p className="text-neutral-300 text-sm text-center font-medium">{state.feedback}</p>
         </div>
       )}
 
-      {/* Elbow angle debug (subtle) */}
+      {/* Debug angles */}
       {isActive && state.elbowAngle > 0 && (
-        <div className="bg-gray-800/60 rounded-xl p-3 flex justify-between text-xs text-gray-500">
-          <span>Elbow: {state.elbowAngle}°</span>
-          <span>Body: {state.bodyAlignment}°</span>
+        <div className="flex justify-between text-[10px] text-neutral-600 px-1 font-mono">
+          <span>Elbow {state.elbowAngle}&deg;</span>
+          <span>Body {state.bodyAlignment}&deg;</span>
         </div>
       )}
     </div>
