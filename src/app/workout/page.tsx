@@ -15,6 +15,9 @@ import {
   triggerHaptic,
   isMilestone,
 } from "@/lib/sounds";
+import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
+import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
+import { getCalibrationProfile } from "@/lib/calibration";
 
 export default function WorkoutPage() {
   const [isActive, setIsActive] = useState(false);
@@ -36,6 +39,7 @@ export default function WorkoutPage() {
   } | null>(null);
   const [saved, setSaved] = useState(false);
   const [milestoneFlash, setMilestoneFlash] = useState<string | null>(null);
+  const [telemetrySessionId, setTelemetrySessionId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const prevCountRef = useRef(0);
 
@@ -100,6 +104,8 @@ export default function WorkoutPage() {
       bodyAlignment: 0,
     });
     setSaved(false);
+    setTelemetrySessionId(null);
+    resetTelemetry();
     setIsActive(true);
     playStartSound();
     triggerHaptic("medium");
@@ -109,6 +115,18 @@ export default function WorkoutPage() {
     setIsActive(false);
     playEndSound();
     triggerHaptic("medium");
+
+    // Finalize telemetry session
+    const user = getCurrentUser();
+    const thresholds = getActiveAnalyzerThresholds();
+    const hasCalibration = !!getCalibrationProfile(user?.id);
+    const session = finishSession(
+      user?.id || "anonymous",
+      { elbowDownAngle: thresholds.elbowDownAngle, elbowUpAngle: thresholds.elbowUpAngle, shoulderDropThreshold: thresholds.shoulderDropThreshold },
+      hasCalibration
+    );
+    saveTelemetrySession(session);
+    setTelemetrySessionId(session.id);
   };
 
   const handleSave = () => {
@@ -131,6 +149,15 @@ export default function WorkoutPage() {
   const handleCloseSummary = () => {
     setShowSummary(false);
     setSessionResult(null);
+  };
+
+  const handleFeedback = (feedback: { rating: "accurate" | "overcounted" | "undercounted"; actualCount?: number }) => {
+    if (telemetrySessionId) {
+      updateSessionFeedback(telemetrySessionId, {
+        countAccuracyRating: feedback.rating,
+        userReportedCount: feedback.actualCount ?? null,
+      });
+    }
   };
 
   return (
@@ -249,6 +276,7 @@ export default function WorkoutPage() {
           onClose={handleCloseSummary}
           onSave={handleSave}
           saved={saved}
+          onFeedback={handleFeedback}
         />
       )}
     </div>

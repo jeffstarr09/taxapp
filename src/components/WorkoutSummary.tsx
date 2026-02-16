@@ -9,6 +9,10 @@ interface WorkoutSummaryProps {
   onClose: () => void;
   onSave: () => void;
   saved: boolean;
+  onFeedback?: (feedback: {
+    rating: "accurate" | "overcounted" | "undercounted";
+    actualCount?: number;
+  }) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -30,10 +34,13 @@ function getShareText(count: number, grade: string): string {
   return `I just dropped ${count} push-ups and scored ${grade} form on DROP — the AI push-up counter. Think you can beat that?`;
 }
 
-export default function WorkoutSummary({ count, duration, averageForm, onClose, onSave, saved }: WorkoutSummaryProps) {
+export default function WorkoutSummary({ count, duration, averageForm, onClose, onSave, saved, onFeedback }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const [shared, setShared] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [actualCount, setActualCount] = useState(count.toString());
 
   const shareText = getShareText(count, gradeInfo.grade);
 
@@ -45,8 +52,7 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
           text: shareText,
         });
         setShared(true);
-      } catch (e) {
-        // User cancelled or share failed, fall back to Twitter
+      } catch {
         handleShareTwitter();
       }
     } else {
@@ -69,9 +75,33 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
     }
   };
 
+  const handleFeedback = (rating: "accurate" | "overcounted" | "undercounted") => {
+    if (rating === "accurate") {
+      onFeedback?.({ rating });
+      setFeedbackGiven(true);
+    } else {
+      setShowCorrection(true);
+      // Pre-fill direction
+      if (rating === "overcounted") {
+        setActualCount(Math.max(0, count - 2).toString());
+      } else {
+        setActualCount((count + 2).toString());
+      }
+    }
+  };
+
+  const handleSubmitCorrection = () => {
+    const parsed = parseInt(actualCount);
+    if (isNaN(parsed) || parsed < 0) return;
+    const rating = parsed < count ? "overcounted" : parsed > count ? "undercounted" : "accurate";
+    onFeedback?.({ rating, actualCount: parsed });
+    setFeedbackGiven(true);
+    setShowCorrection(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="drop-card rounded-3xl p-8 max-w-md w-full drop-glow">
+      <div className="drop-card rounded-3xl p-8 max-w-md w-full drop-glow max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="text-center mb-2">
           <p className="text-neutral-500 text-xs uppercase tracking-[0.3em] font-medium">Workout Complete</p>
@@ -117,12 +147,72 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
         </div>
 
         {/* AI Verified badge */}
-        <div className="flex items-center justify-center gap-2 mb-6 py-2.5 px-4 rounded-xl border border-white/5 bg-white/[0.02]">
+        <div className="flex items-center justify-center gap-2 mb-4 py-2.5 px-4 rounded-xl border border-white/5 bg-white/[0.02]">
           <svg className="w-4 h-4 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
           </svg>
           <span className="text-neutral-400 text-xs font-medium">AI-Verified</span>
         </div>
+
+        {/* Count accuracy feedback */}
+        {onFeedback && !feedbackGiven && !showCorrection && (
+          <div className="mb-4 p-3 rounded-xl border border-white/5 bg-white/[0.02]">
+            <p className="text-neutral-400 text-xs text-center mb-2.5">Was the count accurate?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleFeedback("accurate")}
+                className="flex-1 py-2 bg-green-500/10 text-green-400 rounded-lg text-xs font-semibold hover:bg-green-500/20 transition border border-green-500/20"
+              >
+                Accurate
+              </button>
+              <button
+                onClick={() => handleFeedback("overcounted")}
+                className="flex-1 py-2 bg-orange-500/10 text-orange-400 rounded-lg text-xs font-semibold hover:bg-orange-500/20 transition border border-orange-500/20"
+              >
+                Too many
+              </button>
+              <button
+                onClick={() => handleFeedback("undercounted")}
+                className="flex-1 py-2 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-semibold hover:bg-blue-500/20 transition border border-blue-500/20"
+              >
+                Too few
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Correction input */}
+        {showCorrection && (
+          <div className="mb-4 p-3 rounded-xl border border-white/5 bg-white/[0.02]">
+            <p className="text-neutral-400 text-xs text-center mb-2.5">How many did you actually do?</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={actualCount}
+                onChange={(e) => setActualCount(e.target.value)}
+                min="0"
+                max="999"
+                className="flex-1 px-3 py-2 bg-neutral-800 text-white rounded-lg border border-white/10 focus:border-drop-600 focus:outline-none text-sm text-center tabular-nums"
+              />
+              <button
+                onClick={handleSubmitCorrection}
+                className="px-4 py-2 bg-drop-600 text-white rounded-lg text-xs font-semibold hover:bg-drop-700 transition"
+              >
+                Submit
+              </button>
+            </div>
+            <p className="text-neutral-600 text-[10px] text-center mt-2">
+              This helps improve detection accuracy over time
+            </p>
+          </div>
+        )}
+
+        {/* Feedback confirmation */}
+        {feedbackGiven && (
+          <div className="mb-4 p-2.5 rounded-xl border border-green-500/20 bg-green-500/5 text-center">
+            <p className="text-green-400 text-xs font-medium">Thanks! Your feedback improves detection for everyone.</p>
+          </div>
+        )}
 
         {/* Share buttons */}
         <div className="flex gap-2 mb-3">
