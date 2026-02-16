@@ -7,6 +7,14 @@ import WorkoutHUD from "@/components/WorkoutHUD";
 import WorkoutSummary from "@/components/WorkoutSummary";
 import { PushupState, WorkoutSession } from "@/types";
 import { getCurrentUser, saveWorkout, seedDemoData } from "@/lib/storage";
+import {
+  playRepSound,
+  playMilestoneSound,
+  playStartSound,
+  playEndSound,
+  triggerHaptic,
+  isMilestone,
+} from "@/lib/sounds";
 
 export default function WorkoutPage() {
   const [isActive, setIsActive] = useState(false);
@@ -27,6 +35,7 @@ export default function WorkoutPage() {
     timestamps: number[];
   } | null>(null);
   const [saved, setSaved] = useState(false);
+  const [milestoneFlash, setMilestoneFlash] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const prevCountRef = useRef(0);
 
@@ -55,6 +64,18 @@ export default function WorkoutPage() {
     setPushupState(state);
     if (state.count > prevCountRef.current) {
       prevCountRef.current = state.count;
+
+      // Sound + haptic on every rep
+      playRepSound();
+      triggerHaptic("light");
+
+      // Extra feedback on milestones
+      if (isMilestone(state.count)) {
+        playMilestoneSound();
+        triggerHaptic("heavy");
+        setMilestoneFlash(`${state.count} reps!`);
+        setTimeout(() => setMilestoneFlash(null), 2000);
+      }
     }
   }, []);
 
@@ -80,10 +101,14 @@ export default function WorkoutPage() {
     });
     setSaved(false);
     setIsActive(true);
+    playStartSound();
+    triggerHaptic("medium");
   };
 
   const handleStop = () => {
     setIsActive(false);
+    playEndSound();
+    triggerHaptic("medium");
   };
 
   const handleSave = () => {
@@ -122,7 +147,7 @@ export default function WorkoutPage() {
 
       <div className="grid lg:grid-cols-[1fr,300px] gap-4">
         {/* Camera feed */}
-        <div>
+        <div className="relative">
           {isActive ? (
             <CameraView
               isActive={isActive}
@@ -156,6 +181,17 @@ export default function WorkoutPage() {
                     {tip}
                   </span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Milestone flash overlay */}
+          {milestoneFlash && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <div className="px-8 py-4 bg-drop-600/90 backdrop-blur-sm rounded-2xl animate-milestone-flash">
+                <p className="text-white text-3xl font-black tracking-tight">
+                  {milestoneFlash}
+                </p>
               </div>
             </div>
           )}

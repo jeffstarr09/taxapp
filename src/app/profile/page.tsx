@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
 import { getCurrentUser, setCurrentUser, getWorkouts, getUserById, seedDemoData } from "@/lib/storage";
+import { getUnlockedAchievements, ACHIEVEMENTS, getTierColor, getTierTextColor } from "@/lib/achievements";
 import { User, WorkoutSession } from "@/types";
 
 const AVATAR_COLORS = [
@@ -75,6 +76,9 @@ export default function ProfilePage() {
     workouts.length > 0
       ? Math.round(workouts.reduce((sum, w) => sum + w.averageFormScore, 0) / workouts.length)
       : 0;
+
+  const unlocked = getUnlockedAchievements(workouts);
+  const locked = ACHIEVEMENTS.filter((a) => !unlocked.find((u) => u.id === a.id));
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -166,6 +170,41 @@ export default function ProfilePage() {
               <p className="text-2xl font-black text-white">{avgForm}%</p>
               <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Avg Form</p>
             </div>
+          </div>
+
+          {/* Achievements */}
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+            Achievements ({unlocked.length}/{ACHIEVEMENTS.length})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-8">
+            {unlocked.map((achievement) => (
+              <div
+                key={achievement.id}
+                className={`bg-gradient-to-br ${getTierColor(achievement.tier)} border rounded-xl p-3.5`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{achievement.icon}</span>
+                  <span className={`font-bold text-xs ${getTierTextColor(achievement.tier)}`}>
+                    {achievement.name}
+                  </span>
+                </div>
+                <p className="text-neutral-500 text-[10px]">{achievement.description}</p>
+              </div>
+            ))}
+            {locked.map((achievement) => (
+              <div
+                key={achievement.id}
+                className="bg-neutral-900/50 border border-white/5 rounded-xl p-3.5 opacity-40"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg grayscale">🔒</span>
+                  <span className="font-bold text-xs text-neutral-600">
+                    {achievement.name}
+                  </span>
+                </div>
+                <p className="text-neutral-700 text-[10px]">{achievement.description}</p>
+              </div>
+            ))}
           </div>
 
           {/* Recent workouts */}
