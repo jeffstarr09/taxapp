@@ -11,7 +11,6 @@ interface WorkoutSummaryProps {
   saved: boolean;
   onFeedback?: (feedback: {
     rating: "accurate" | "overcounted" | "undercounted";
-    actualCount?: number;
   }) => void;
 }
 
@@ -39,8 +38,6 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const [shared, setShared] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
-  const [showCorrection, setShowCorrection] = useState(false);
-  const [actualCount, setActualCount] = useState(count.toString());
 
   const shareText = getShareText(count, gradeInfo.grade);
 
@@ -76,27 +73,8 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
   };
 
   const handleFeedback = (rating: "accurate" | "overcounted" | "undercounted") => {
-    if (rating === "accurate") {
-      onFeedback?.({ rating });
-      setFeedbackGiven(true);
-    } else {
-      setShowCorrection(true);
-      // Pre-fill direction
-      if (rating === "overcounted") {
-        setActualCount(Math.max(0, count - 2).toString());
-      } else {
-        setActualCount((count + 2).toString());
-      }
-    }
-  };
-
-  const handleSubmitCorrection = () => {
-    const parsed = parseInt(actualCount);
-    if (isNaN(parsed) || parsed < 0) return;
-    const rating = parsed < count ? "overcounted" : parsed > count ? "undercounted" : "accurate";
-    onFeedback?.({ rating, actualCount: parsed });
+    onFeedback?.({ rating });
     setFeedbackGiven(true);
-    setShowCorrection(false);
   };
 
   return (
@@ -155,7 +133,7 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
         </div>
 
         {/* Count accuracy feedback */}
-        {onFeedback && !feedbackGiven && !showCorrection && (
+        {onFeedback && !feedbackGiven && (
           <div className="mb-4 p-3 rounded-xl border border-white/5 bg-white/[0.02]">
             <p className="text-neutral-400 text-xs text-center mb-2.5">Was the count accurate?</p>
             <div className="flex gap-2">
@@ -178,32 +156,6 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
                 Too few
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Correction input */}
-        {showCorrection && (
-          <div className="mb-4 p-3 rounded-xl border border-white/5 bg-white/[0.02]">
-            <p className="text-neutral-400 text-xs text-center mb-2.5">How many did you actually do?</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={actualCount}
-                onChange={(e) => setActualCount(e.target.value)}
-                min="0"
-                max="999"
-                className="flex-1 px-3 py-2 bg-neutral-800 text-white rounded-lg border border-white/10 focus:border-drop-600 focus:outline-none text-sm text-center tabular-nums"
-              />
-              <button
-                onClick={handleSubmitCorrection}
-                className="px-4 py-2 bg-drop-600 text-white rounded-lg text-xs font-semibold hover:bg-drop-700 transition"
-              >
-                Submit
-              </button>
-            </div>
-            <p className="text-neutral-600 text-[10px] text-center mt-2">
-              This helps improve detection accuracy over time
-            </p>
           </div>
         )}
 

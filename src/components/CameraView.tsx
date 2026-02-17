@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState } from "react";
-import { detectPose, initPoseDetector, disposePoseDetector } from "@/lib/pose-detection";
+import { detectPose, initPoseDetector } from "@/lib/pose-detection";
 import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
 import { PoseKeypoint, PushupState } from "@/types";
 
@@ -26,15 +26,133 @@ const SKELETON_CONNECTIONS: [string, string][] = [
   ["right_knee", "right_ankle"],
 ];
 
+/**
+ * Draws a side-view pushup silhouette outline on the canvas.
+ * Shown briefly when tracking starts so users know where to position.
+ */
+function drawPositionGuide(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  ctx.save();
+
+  // Semi-transparent overlay
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ctx.fillRect(0, 0, w, h);
+
+  // Pushup silhouette (side view, person in "up" position)
+  // Scaled proportionally to canvas size
+  const scale = Math.min(w / 640, h / 480);
+  const cx = w / 2;
+  const baseY = h * 0.55;
+
+  ctx.strokeStyle = "rgba(220, 38, 38, 0.6)";
+  ctx.lineWidth = 2.5 * scale;
+  ctx.setLineDash([8 * scale, 6 * scale]);
+
+  // Body line from hands -> shoulders -> hips -> ankles (side view plank)
+  const bodyLen = w * 0.6;
+  const startX = cx - bodyLen / 2;
+  const endX = cx + bodyLen / 2;
+
+  // Hands (wrists on ground)
+  const handY = baseY + 30 * scale;
+  // Shoulders (above hands)
+  const shoulderX = startX + bodyLen * 0.2;
+  const shoulderY = baseY - 20 * scale;
+  // Hips
+  const hipX = startX + bodyLen * 0.55;
+  const hipY = baseY - 15 * scale;
+  // Ankles
+  const ankleX = endX;
+  const ankleY = baseY + 5 * scale;
+
+  // Arms (wrist -> elbow -> shoulder)
+  ctx.beginPath();
+  ctx.moveTo(startX, handY);
+  ctx.lineTo(startX + bodyLen * 0.08, baseY - 5 * scale); // elbow
+  ctx.lineTo(shoulderX, shoulderY);
+  ctx.stroke();
+
+  // Torso (shoulder -> hip)
+  ctx.beginPath();
+  ctx.moveTo(shoulderX, shoulderY);
+  ctx.lineTo(hipX, hipY);
+  ctx.stroke();
+
+  // Legs (hip -> knee -> ankle)
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY);
+  ctx.lineTo(startX + bodyLen * 0.75, baseY);
+  ctx.lineTo(ankleX, ankleY);
+  ctx.stroke();
+
+  // Head circle
+  ctx.beginPath();
+  ctx.arc(shoulderX - 15 * scale, shoulderY - 15 * scale, 12 * scale, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Joint dots
+  ctx.setLineDash([]);
+  ctx.fillStyle = "rgba(220, 38, 38, 0.5)";
+  const joints = [
+    [startX, handY],
+    [startX + bodyLen * 0.08, baseY - 5 * scale],
+    [shoulderX, shoulderY],
+    [hipX, hipY],
+    [startX + bodyLen * 0.75, baseY],
+    [ankleX, ankleY],
+  ];
+  joints.forEach(([jx, jy]) => {
+    ctx.beginPath();
+    ctx.arc(jx, jy, 4 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Label
+  ctx.font = `${14 * scale}px system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.textAlign = "center";
+  ctx.fillText("Align your body like this", cx, h * 0.85);
+
+  ctx.font = `${11 * scale}px system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.fillText("Side view — full body in frame", cx, h * 0.85 + 18 * scale);
+
+  ctx.restore();
+}
+
 export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const guideCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
   const startTimeRef = useRef<number>(0);
   const lastCountRef = useRef<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(true);
+  const [poseDetected, setPoseDetected] = useState(false);
+  const [displayCount, setDisplayCount] = useState(0);
+  const poseDetectedFrames = useRef(0);
+
+  // Draw guide when camera is ready
+  useEffect(() => {
+    if (!loading && showGuide && guideCanvasRef.current && videoRef.current) {
+      const canvas = guideCanvasRef.current;
+      const video = videoRef.current;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext("2d");
+      if (ctx) drawPositionGuide(ctx, canvas.width, canvas.height);
+    }
+  }, [loading, showGuide]);
+
+  // Auto-hide guide after pose is steadily detected
+  useEffect(() => {
+    if (poseDetected && showGuide) {
+      const timeout = setTimeout(() => setShowGuide(false), 600);
+      return () => clearTimeout(timeout);
+    }
+  }, [poseDetected, showGuide]);
 
   const drawKeypoints = useCallback((keypoints: PoseKeypoint[], canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d");
@@ -76,6 +194,17 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
         ctx.stroke();
       }
     });
+
+    // Track if pose is detected reliably (for guide auto-hide)
+    const confidentPoints = keypoints.filter((kp) => kp.score > 0.3).length;
+    if (confidentPoints >= 8) {
+      poseDetectedFrames.current++;
+      if (poseDetectedFrames.current > 15) {
+        setPoseDetected(true);
+      }
+    } else {
+      poseDetectedFrames.current = Math.max(0, poseDetectedFrames.current - 2);
+    }
   }, []);
 
   const detect = useCallback(async () => {
@@ -91,8 +220,9 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
         const pushupState = analyzePushup(keypoints);
         onUpdate(pushupState);
         lastCountRef.current = pushupState.count;
+        setDisplayCount(pushupState.count);
       }
-    } catch (e) {
+    } catch {
       // Silently continue on detection errors
     }
 
@@ -102,6 +232,9 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
   const startCamera = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setShowGuide(true);
+    setPoseDetected(false);
+    poseDetectedFrames.current = 0;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -216,6 +349,28 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
         className="absolute inset-0 w-full h-full"
         style={{ transform: "scaleX(-1)" }}
       />
+      {/* Position guide overlay */}
+      {showGuide && !loading && (
+        <canvas
+          ref={guideCanvasRef}
+          className="absolute inset-0 w-full h-full z-10 transition-opacity duration-500"
+          style={{
+            transform: "scaleX(-1)",
+            opacity: poseDetected ? 0 : 1,
+          }}
+        />
+      )}
+      {/* Rep counter overlay — always visible top-left corner */}
+      {!loading && (
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+          <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+            <span className="text-white text-3xl font-black tabular-nums drop-text-glow">
+              {displayCount}
+            </span>
+            <span className="text-neutral-400 text-xs ml-1.5 uppercase tracking-wider">reps</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
