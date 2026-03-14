@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { getUserByUsername, addFriend, getCurrentUser, setCurrentUser } from "@/lib/storage";
+import { useAuth } from "@/lib/auth-context";
+import { getProfileByUsername, addFriend } from "@/lib/storage";
 
 interface AddFriendProps {
   onFriendAdded: () => void;
 }
 
 export default function AddFriend({ onFriendAdded }: AddFriendProps) {
+  const { profile } = useAuth();
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleAdd = () => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      setMessage({ text: "Create a profile first", type: "error" });
+  const handleAdd = async () => {
+    if (!profile) {
+      setMessage({ text: "Sign in first", type: "error" });
       return;
     }
 
@@ -24,28 +26,23 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
       return;
     }
 
-    if (trimmed === currentUser.username.toLowerCase()) {
+    if (trimmed === profile.username.toLowerCase()) {
       setMessage({ text: "That's you!", type: "error" });
       return;
     }
 
-    const friend = getUserByUsername(trimmed);
+    setLoading(true);
+    const friend = await getProfileByUsername(trimmed);
     if (!friend) {
       setMessage({ text: "User not found", type: "error" });
+      setLoading(false);
       return;
     }
 
-    if (currentUser.friends.includes(friend.id)) {
-      setMessage({ text: "Already friends", type: "error" });
-      return;
-    }
-
-    addFriend(currentUser.id, friend.id);
-    const updated = { ...currentUser, friends: [...currentUser.friends, friend.id] };
-    setCurrentUser(updated);
-
+    await addFriend(profile.id, friend.id);
     setMessage({ text: `Added ${friend.displayName}`, type: "success" });
     setUsername("");
+    setLoading(false);
     onFriendAdded();
   };
 
@@ -66,9 +63,10 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
         />
         <button
           onClick={handleAdd}
-          className="px-4 py-2 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-semibold text-sm"
+          disabled={loading}
+          className="px-4 py-2 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-semibold text-sm disabled:opacity-50"
         >
-          Add
+          {loading ? "..." : "Add"}
         </button>
       </div>
       {message && (
@@ -76,9 +74,6 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
           {message.text}
         </p>
       )}
-      <p className="text-neutral-600 text-xs mt-2">
-        Try: fitfiona, pushupping, ironarms, repcounter, dailyreps
-      </p>
     </div>
   );
 }

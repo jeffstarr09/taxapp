@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { v4 as uuidv4 } from "uuid";
-import { getCurrentUser, setCurrentUser, getWorkouts, getUserById, seedDemoData } from "@/lib/storage";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { getWorkouts, updateProfile, getFriends } from "@/lib/storage";
 import { getUnlockedAchievements, ACHIEVEMENTS, getTierColor, getTierTextColor } from "@/lib/achievements";
 import { User, WorkoutSession } from "@/types";
 
@@ -13,32 +14,37 @@ const AVATAR_COLORS = [
 ];
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { profile, user, loading: authLoading, signOut, refreshProfile } = useAuth();
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
   const [friends, setFriends] = useState<User[]>([]);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    seedDemoData();
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setUsername(currentUser.username);
-      setDisplayName(currentUser.displayName);
-      setSelectedColor(currentUser.avatarColor);
-      setWorkouts(getWorkouts(currentUser.id));
-      setFriends(
-        currentUser.friends
-          .map((id) => getUserById(id))
-          .filter((u): u is User => u !== undefined)
-      );
-    }
-  }, []);
+    if (authLoading) return;
+    if (!profile) return;
 
-  const handleSave = () => {
+    setUsername(profile.username);
+    setDisplayName(profile.display_name);
+    setSelectedColor(profile.avatar_color);
+
+    const loadData = async () => {
+      const [w, f] = await Promise.all([
+        getWorkouts(profile.id),
+        getFriends(profile.id),
+      ]);
+      setWorkouts(w);
+      setFriends(f);
+    };
+    loadData();
+  }, [authLoading, profile]);
+
+  const handleSave = async () => {
+    if (!profile) return;
     const trimmedUsername = username.trim().toLowerCase();
     const trimmedName = displayName.trim();
 
@@ -55,21 +61,49 @@ export default function ProfilePage() {
       return;
     }
 
-    const newUser: User = user
-      ? { ...user, username: trimmedUsername, displayName: trimmedName, avatarColor: selectedColor }
-      : {
-          id: uuidv4(),
-          username: trimmedUsername,
-          displayName: trimmedName,
-          avatarColor: selectedColor,
-          createdAt: new Date().toISOString(),
-          friends: [],
-        };
-
-    setCurrentUser(newUser);
-    setUser(newUser);
+    setSaving(true);
+    await updateProfile(profile.id, {
+      username: trimmedUsername,
+      display_name: trimmedName,
+      avatar_color: selectedColor,
+    });
+    await refreshProfile();
+    setSaving(false);
     setError("");
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
+
+  // Not logged in
+  if (!authLoading && !user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center">
+        <div className="drop-card rounded-2xl p-8">
+          <h2 className="text-xl font-black text-white mb-2">Not Signed In</h2>
+          <p className="text-neutral-400 text-sm mb-6">
+            Create an account to save your workouts and compete on the leaderboard.
+          </p>
+          <Link
+            href="/auth"
+            className="inline-block px-8 py-3 bg-drop-600 text-white rounded-xl hover:bg-drop-700 transition font-bold text-sm"
+          >
+            Sign In / Sign Up
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading || !profile) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="text-center py-20 text-neutral-500 text-sm">Loading...</div>
+      </div>
+    );
+  }
 
   const totalPushups = workouts.reduce((sum, w) => sum + w.count, 0);
   const avgForm =
@@ -140,148 +174,153 @@ export default function ProfilePage() {
           {error && <p className="text-drop-400 text-xs">{error}</p>}
           <button
             onClick={handleSave}
-            className="w-full px-6 py-3 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-bold text-sm"
+            disabled={saving}
+            className="w-full px-6 py-3 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-bold text-sm disabled:opacity-50"
           >
-            {user ? "Update Profile" : "Create Profile"}
+            {saving ? "Saving..." : "Update Profile"}
           </button>
         </div>
+
+        {/* Sign out */}
+        <button
+          onClick={handleSignOut}
+          className="w-full mt-3 px-6 py-2.5 border border-white/10 text-neutral-500 rounded-lg hover:text-white hover:bg-white/5 transition text-sm"
+        >
+          Sign Out
+        </button>
       </div>
 
       {/* Stats */}
-      {user && (
+      <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Stats</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
+        <div className="drop-card rounded-xl p-4 text-center">
+          <p className="text-2xl font-black text-white">{totalPushups.toLocaleString()}</p>
+          <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Total Reps</p>
+        </div>
+        <div className="drop-card rounded-xl p-4 text-center">
+          <p className="text-2xl font-black text-white">{workouts.length}</p>
+          <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Workouts</p>
+        </div>
+        <div className="drop-card rounded-xl p-4 text-center">
+          <p className="text-2xl font-black text-white">
+            {workouts.reduce((max, w) => Math.max(max, w.count), 0)}
+          </p>
+          <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Best</p>
+        </div>
+        <div className="drop-card rounded-xl p-4 text-center">
+          <p className="text-2xl font-black text-white">{avgForm}%</p>
+          <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Avg Form</p>
+        </div>
+      </div>
+
+      {/* Achievements */}
+      <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+        Achievements ({unlocked.length}/{ACHIEVEMENTS.length})
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-8">
+        {unlocked.map((achievement) => (
+          <div
+            key={achievement.id}
+            className={`bg-gradient-to-br ${getTierColor(achievement.tier)} border rounded-xl p-3.5`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">{achievement.icon}</span>
+              <span className={`font-bold text-xs ${getTierTextColor(achievement.tier)}`}>
+                {achievement.name}
+              </span>
+            </div>
+            <p className="text-neutral-500 text-[10px]">{achievement.description}</p>
+          </div>
+        ))}
+        {locked.map((achievement) => (
+          <div
+            key={achievement.id}
+            className="bg-neutral-900/50 border border-white/5 rounded-xl p-3.5 opacity-40"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg grayscale">🔒</span>
+              <span className="font-bold text-xs text-neutral-600">
+                {achievement.name}
+              </span>
+            </div>
+            <p className="text-neutral-700 text-[10px]">{achievement.description}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent workouts */}
+      {workouts.length > 0 && (
         <>
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Stats</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
-            <div className="drop-card rounded-xl p-4 text-center">
-              <p className="text-2xl font-black text-white">{totalPushups.toLocaleString()}</p>
-              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Total Reps</p>
-            </div>
-            <div className="drop-card rounded-xl p-4 text-center">
-              <p className="text-2xl font-black text-white">{workouts.length}</p>
-              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Workouts</p>
-            </div>
-            <div className="drop-card rounded-xl p-4 text-center">
-              <p className="text-2xl font-black text-white">
-                {workouts.reduce((max, w) => Math.max(max, w.count), 0)}
-              </p>
-              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Best</p>
-            </div>
-            <div className="drop-card rounded-xl p-4 text-center">
-              <p className="text-2xl font-black text-white">{avgForm}%</p>
-              <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Avg Form</p>
-            </div>
-          </div>
-
-          {/* Achievements */}
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
-            Achievements ({unlocked.length}/{ACHIEVEMENTS.length})
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-8">
-            {unlocked.map((achievement) => (
-              <div
-                key={achievement.id}
-                className={`bg-gradient-to-br ${getTierColor(achievement.tier)} border rounded-xl p-3.5`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">{achievement.icon}</span>
-                  <span className={`font-bold text-xs ${getTierTextColor(achievement.tier)}`}>
-                    {achievement.name}
-                  </span>
-                </div>
-                <p className="text-neutral-500 text-[10px]">{achievement.description}</p>
-              </div>
-            ))}
-            {locked.map((achievement) => (
-              <div
-                key={achievement.id}
-                className="bg-neutral-900/50 border border-white/5 rounded-xl p-3.5 opacity-40"
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg grayscale">🔒</span>
-                  <span className="font-bold text-xs text-neutral-600">
-                    {achievement.name}
-                  </span>
-                </div>
-                <p className="text-neutral-700 text-[10px]">{achievement.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Recent workouts */}
-          {workouts.length > 0 && (
-            <>
-              <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Recent</h2>
-              <div className="space-y-1.5 mb-8">
-                {workouts
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .slice(0, 10)
-                  .map((workout) => (
-                    <div
-                      key={workout.id}
-                      className="flex items-center justify-between p-3.5 drop-card rounded-xl"
-                    >
-                      <div>
-                        <p className="text-white font-bold text-sm">{workout.count} reps</p>
-                        <p className="text-neutral-600 text-xs">
-                          {new Date(workout.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="text-white text-xs font-medium">{workout.averageFormScore}%</p>
-                          <p className="text-neutral-600 text-[10px]">
-                            {Math.floor(workout.duration / 60)}:{(workout.duration % 60).toString().padStart(2, "0")}
-                          </p>
-                        </div>
-                        {workout.verified && (
-                          <svg className="w-4 h-4 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </>
-          )}
-
-          {/* Friends */}
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
-            Friends ({friends.length})
-          </h2>
-          {friends.length > 0 ? (
-            <div className="space-y-1.5">
-              {friends.map((friend) => (
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Recent</h2>
+          <div className="space-y-1.5 mb-8">
+            {workouts
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, 10)
+              .map((workout) => (
                 <div
-                  key={friend.id}
-                  className="flex items-center gap-3 p-3 drop-card rounded-xl"
+                  key={workout.id}
+                  className="flex items-center justify-between p-3.5 drop-card rounded-xl"
                 >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                    style={{ backgroundColor: friend.avatarColor }}
-                  >
-                    {friend.displayName.charAt(0).toUpperCase()}
-                  </div>
                   <div>
-                    <p className="text-white font-medium text-sm">{friend.displayName}</p>
-                    <p className="text-neutral-600 text-xs">@{friend.username}</p>
+                    <p className="text-white font-bold text-sm">{workout.count} reps</p>
+                    <p className="text-neutral-600 text-xs">
+                      {new Date(workout.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-white text-xs font-medium">{workout.averageFormScore}%</p>
+                      <p className="text-neutral-600 text-[10px]">
+                        {Math.floor(workout.duration / 60)}:{(workout.duration % 60).toString().padStart(2, "0")}
+                      </p>
+                    </div>
+                    {workout.verified && (
+                      <svg className="w-4 h-4 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                      </svg>
+                    )}
                   </div>
                 </div>
               ))}
-            </div>
-          ) : (
-            <p className="text-neutral-600 text-sm">
-              No friends yet. Add friends on the{" "}
-              <Link href="/leaderboard" className="text-drop-500 hover:underline">
-                leaderboard
-              </Link>
-              .
-            </p>
-          )}
+          </div>
         </>
+      )}
+
+      {/* Friends */}
+      <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+        Friends ({friends.length})
+      </h2>
+      {friends.length > 0 ? (
+        <div className="space-y-1.5">
+          {friends.map((friend) => (
+            <div
+              key={friend.id}
+              className="flex items-center gap-3 p-3 drop-card rounded-xl"
+            >
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                style={{ backgroundColor: friend.avatarColor }}
+              >
+                {friend.displayName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">{friend.displayName}</p>
+                <p className="text-neutral-600 text-xs">@{friend.username}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-neutral-600 text-sm">
+          No friends yet. Add friends on the{" "}
+          <Link href="/leaderboard" className="text-drop-500 hover:underline">
+            leaderboard
+          </Link>
+          .
+        </p>
       )}
     </div>
   );

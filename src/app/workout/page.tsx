@@ -7,7 +7,8 @@ import WorkoutHUD from "@/components/WorkoutHUD";
 import WorkoutSummary from "@/components/WorkoutSummary";
 import Tutorial, { hasSeen as tutorialSeen } from "@/components/Tutorial";
 import { PushupState, WorkoutSession } from "@/types";
-import { getCurrentUser, saveWorkout, seedDemoData } from "@/lib/storage";
+import { useAuth } from "@/lib/auth-context";
+import { saveWorkout } from "@/lib/storage";
 import {
   playRepSound,
   playMilestoneSound,
@@ -21,6 +22,7 @@ import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
 import { getCalibrationProfile } from "@/lib/calibration";
 
 export default function WorkoutPage() {
+  const { profile } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [pushupState, setPushupState] = useState<PushupState>({
     phase: "up",
@@ -46,7 +48,6 @@ export default function WorkoutPage() {
   const prevCountRef = useRef(0);
 
   useEffect(() => {
-    seedDemoData();
     if (!tutorialSeen()) {
       setShowTutorial(true);
     }
@@ -122,11 +123,10 @@ export default function WorkoutPage() {
     triggerHaptic("medium");
 
     // Finalize telemetry session
-    const user = getCurrentUser();
     const thresholds = getActiveAnalyzerThresholds();
-    const hasCalibration = !!getCalibrationProfile(user?.id);
+    const hasCalibration = !!getCalibrationProfile(profile?.id);
     const session = finishSession(
-      user?.id || "anonymous",
+      profile?.id || "anonymous",
       { elbowDownAngle: thresholds.elbowDownAngle, elbowUpAngle: thresholds.elbowUpAngle, shoulderDropThreshold: thresholds.shoulderDropThreshold },
       hasCalibration
     );
@@ -136,10 +136,9 @@ export default function WorkoutPage() {
 
   const handleSave = () => {
     if (!sessionResult || saved) return;
-    const user = getCurrentUser();
     const workout: WorkoutSession = {
       id: uuidv4(),
-      userId: user?.id || "anonymous",
+      userId: profile?.id || "anonymous",
       count: sessionResult.count,
       duration: sessionResult.duration,
       averageFormScore: sessionResult.avgForm,

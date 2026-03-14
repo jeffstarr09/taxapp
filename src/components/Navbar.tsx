@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
   {
@@ -45,6 +46,7 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { profile, loading } = useAuth();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-white/5 md:top-0 md:bottom-auto md:border-t-0 md:border-b md:border-white/5">
@@ -75,6 +77,33 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Auth status — desktop only */}
+          {!loading && (
+            <div className="hidden md:flex items-center ml-auto">
+              {profile ? (
+                <Link href="/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{
+                      backgroundColor: profile.avatar_color,
+                      color: profile.avatar_color === "#ffffff" ? "#0a0a0a" : "#ffffff",
+                    }}
+                  >
+                    {profile.display_name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-white text-sm font-medium">{profile.display_name}</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/auth"
+                  className="px-4 py-1.5 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition text-sm font-semibold"
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </nav>
