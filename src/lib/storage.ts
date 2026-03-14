@@ -1,12 +1,14 @@
 import { User, WorkoutSession, LeaderboardEntry } from "@/types";
 import { createClient } from "@/lib/supabase";
 
-const supabase = createClient();
+function getSupabase() {
+  return createClient();
+}
 
 // ── Profile helpers ────────────────────────────────────────────
 
 export async function getProfile(userId: string): Promise<User | null> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("profiles")
     .select("*")
     .eq("id", userId)
@@ -16,7 +18,7 @@ export async function getProfile(userId: string): Promise<User | null> {
 }
 
 export async function getProfileByUsername(username: string): Promise<User | null> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("profiles")
     .select("*")
     .eq("username", username.toLowerCase())
@@ -29,7 +31,7 @@ export async function updateProfile(
   userId: string,
   updates: { username?: string; display_name?: string; avatar_color?: string }
 ): Promise<void> {
-  await supabase.from("profiles").update(updates).eq("id", userId);
+  await getSupabase().from("profiles").update(updates).eq("id", userId);
 }
 
 function dbProfileToUser(row: {
@@ -52,7 +54,7 @@ function dbProfileToUser(row: {
 // ── Workout operations ─────────────────────────────────────────
 
 export async function getWorkouts(userId?: string): Promise<WorkoutSession[]> {
-  let query = supabase
+  let query = getSupabase()
     .from("workouts")
     .select("*")
     .order("date", { ascending: false });
@@ -77,7 +79,7 @@ export async function getWorkouts(userId?: string): Promise<WorkoutSession[]> {
 }
 
 export async function saveWorkout(workout: WorkoutSession): Promise<void> {
-  await supabase.from("workouts").insert({
+  await getSupabase().from("workouts").insert({
     id: workout.id,
     user_id: workout.userId,
     count: workout.count,
@@ -96,7 +98,7 @@ export async function getLeaderboard(
   currentUserId?: string
 ): Promise<LeaderboardEntry[]> {
   // Use the database view for global leaderboard
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("leaderboard")
     .select("*")
     .order("total_pushups", { ascending: false });
@@ -127,7 +129,7 @@ export async function getLeaderboard(
 // ── Friends ────────────────────────────────────────────────────
 
 export async function getFriendIds(userId: string): Promise<string[]> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("friendships")
     .select("friend_id")
     .eq("user_id", userId);
@@ -137,7 +139,7 @@ export async function getFriendIds(userId: string): Promise<string[]> {
 export async function getFriends(userId: string): Promise<User[]> {
   const ids = await getFriendIds(userId);
   if (ids.length === 0) return [];
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("profiles")
     .select("*")
     .in("id", ids);
@@ -146,7 +148,7 @@ export async function getFriends(userId: string): Promise<User[]> {
 
 export async function addFriend(userId: string, friendId: string): Promise<void> {
   // Add both directions for bidirectional friendship
-  await supabase.from("friendships").upsert([
+  await getSupabase().from("friendships").upsert([
     { user_id: userId, friend_id: friendId },
     { user_id: friendId, friend_id: userId },
   ]);
