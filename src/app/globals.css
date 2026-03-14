@@ -75,6 +75,28 @@ body {
   animation: rep-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Milestone flash animation */
+@keyframes milestone-flash {
+  0% { opacity: 0; transform: scale(0.8); }
+  15% { opacity: 1; transform: scale(1.05); }
+  85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+
+.animate-milestone-flash {
+  animation: milestone-flash 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Achievement slide in */
+@keyframes slide-in {
+  0% { opacity: 0; transform: translateX(100px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Red line accent */
 .red-line {
   height: 2px;

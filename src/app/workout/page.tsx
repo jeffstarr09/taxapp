@@ -5,10 +5,24 @@ import { v4 as uuidv4 } from "uuid";
 import CameraView from "@/components/CameraView";
 import WorkoutHUD from "@/components/WorkoutHUD";
 import WorkoutSummary from "@/components/WorkoutSummary";
+import Tutorial, { hasSeen as tutorialSeen } from "@/components/Tutorial";
 import { PushupState, WorkoutSession } from "@/types";
-import { getCurrentUser, saveWorkout, seedDemoData } from "@/lib/storage";
+import { useAuth } from "@/lib/auth-context";
+import { saveWorkout } from "@/lib/storage";
+import {
+  playRepSound,
+  playMilestoneSound,
+  playStartSound,
+  playEndSound,
+  triggerHaptic,
+  isMilestone,
+} from "@/lib/sounds";
+import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
+import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
+import { getCalibrationProfile } from "@/lib/calibration";
 
 export default function WorkoutPage() {
+  const { profile } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [pushupState, setPushupState] = useState<PushupState>({
     phase: "up",
@@ -27,11 +41,16 @@ export default function WorkoutPage() {
     timestamps: number[];
   } | null>(null);
   const [saved, setSaved] = useState(false);
+  const [milestoneFlash, setMilestoneFlash] = useState<string | null>(null);
+  const [telemetrySessionId, setTelemetrySessionId] = useState<string | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const prevCountRef = useRef(0);
 
   useEffect(() => {
-    seedDemoData();
+    if (!tutorialSeen()) {
+      setShowTutorial(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -55,6 +74,18 @@ export default function WorkoutPage() {
     setPushupState(state);
     if (state.count > prevCountRef.current) {
       prevCountRef.current = state.count;
+
+      // Sound + haptic on every rep
+      playRepSound();
+      triggerHaptic("light");
+
+      // Extra feedback on milestones
+      if (isMilestone(state.count)) {
+        playMilestoneSound();
+        triggerHaptic("heavy");
+        setMilestoneFlash(`${state.count} reps!`);
+        setTimeout(() => setMilestoneFlash(null), 2000);
+      }
     }
   }, []);
 
@@ -79,19 +110,35 @@ export default function WorkoutPage() {
       bodyAlignment: 0,
     });
     setSaved(false);
+    setTelemetrySessionId(null);
+    resetTelemetry();
     setIsActive(true);
+    playStartSound();
+    triggerHaptic("medium");
   };
 
   const handleStop = () => {
     setIsActive(false);
+    playEndSound();
+    triggerHaptic("medium");
+
+    // Finalize telemetry session
+    const thresholds = getActiveAnalyzerThresholds();
+    const hasCalibration = !!getCalibrationProfile(profile?.id);
+    const session = finishSession(
+      profile?.id || "anonymous",
+      { elbowDownAngle: thresholds.elbowDownAngle, elbowUpAngle: thresholds.elbowUpAngle, shoulderDropThreshold: thresholds.shoulderDropThreshold },
+      hasCalibration
+    );
+    saveTelemetrySession(session);
+    setTelemetrySessionId(session.id);
   };
 
   const handleSave = () => {
     if (!sessionResult || saved) return;
-    const user = getCurrentUser();
     const workout: WorkoutSession = {
       id: uuidv4(),
-      userId: user?.id || "anonymous",
+      userId: profile?.id || "anonymous",
       count: sessionResult.count,
       duration: sessionResult.duration,
       averageFormScore: sessionResult.avgForm,
@@ -108,6 +155,14 @@ export default function WorkoutPage() {
     setSessionResult(null);
   };
 
+  const handleFeedback = (feedback: { rating: "accurate" | "overcounted" | "undercounted" }) => {
+    if (telemetrySessionId) {
+      updateSessionFeedback(telemetrySessionId, {
+        countAccuracyRating: feedback.rating,
+      });
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
@@ -122,7 +177,7 @@ export default function WorkoutPage() {
 
       <div className="grid lg:grid-cols-[1fr,300px] gap-4">
         {/* Camera feed */}
-        <div>
+        <div className="relative">
           {isActive ? (
             <CameraView
               isActive={isActive}
@@ -130,10 +185,10 @@ export default function WorkoutPage() {
               onSessionEnd={handleSessionEnd}
             />
           ) : (
-            <div className="aspect-[4/3] drop-card rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center p-8">
-              <div className="w-16 h-16 rounded-2xl bg-drop-600/10 flex items-center justify-center mb-4">
+            <div className="aspect-[4/3] drop-card rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center p-6 sm:p-8">
+              <div className="w-14 h-14 rounded-2xl bg-drop-600/10 flex items-center justify-center mb-4">
                 <svg
-                  className="w-8 h-8 text-drop-500"
+                  className="w-7 h-7 text-drop-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -146,16 +201,70 @@ export default function WorkoutPage() {
                   />
                 </svg>
               </div>
-              <h2 className="text-lg font-bold text-white mb-2">Ready?</h2>
-              <p className="text-neutral-500 text-sm text-center mb-1">
-                Position your device so your full body is visible from the side.
+              <h2 className="text-lg font-bold text-white mb-1">Setup Checklist</h2>
+              <p className="text-neutral-500 text-xs text-center mb-5 max-w-xs">
+                Follow these steps for the most accurate push-up tracking
               </p>
-              <div className="flex flex-wrap justify-center gap-2 mt-4">
-                {["4-8 feet away", "Good lighting", "Side angle"].map((tip) => (
-                  <span key={tip} className="px-3 py-1 bg-white/5 rounded-full text-neutral-400 text-xs">
-                    {tip}
-                  </span>
+
+              <div className="w-full max-w-sm space-y-3">
+                {[
+                  {
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                      </svg>
+                    ),
+                    title: "Distance: 4–8 feet away",
+                    desc: "Prop your phone so your full body is in frame",
+                  },
+                  {
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      </svg>
+                    ),
+                    title: "Side angle view",
+                    desc: "Camera should see you from the side, not front-on",
+                  },
+                  {
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                      </svg>
+                    ),
+                    title: "Good lighting",
+                    desc: "Well-lit room — avoid backlighting or shadows on your body",
+                  },
+                  {
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                      </svg>
+                    ),
+                    title: "Stable surface",
+                    desc: "Lean your phone against something sturdy — no wobble",
+                  },
+                ].map((step) => (
+                  <div key={step.title} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="mt-0.5 text-drop-500 shrink-0">{step.icon}</div>
+                    <div>
+                      <p className="text-white text-sm font-semibold">{step.title}</p>
+                      <p className="text-neutral-500 text-xs mt-0.5">{step.desc}</p>
+                    </div>
+                  </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Milestone flash overlay */}
+          {milestoneFlash && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <div className="px-8 py-4 bg-drop-600/90 backdrop-blur-sm rounded-2xl animate-milestone-flash">
+                <p className="text-white text-3xl font-black tracking-tight">
+                  {milestoneFlash}
+                </p>
               </div>
             </div>
           )}
@@ -213,7 +322,12 @@ export default function WorkoutPage() {
           onClose={handleCloseSummary}
           onSave={handleSave}
           saved={saved}
+          onFeedback={handleFeedback}
         />
+      )}
+
+      {showTutorial && (
+        <Tutorial onComplete={() => setShowTutorial(false)} />
       )}
     </div>
   );

@@ -2,34 +2,119 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getCurrentUser, getWorkouts, getLeaderboard, seedDemoData } from "@/lib/storage";
-import { User, LeaderboardEntry } from "@/types";
+import { useAuth } from "@/lib/auth-context";
+import { getWorkouts, getLeaderboard } from "@/lib/storage";
+import {
+  getTodaysChallenge,
+  getTodaysWorkouts,
+  getChallengeProgress,
+} from "@/lib/challenges";
+import {
+  getNewAchievements,
+  dismissAllAchievements,
+  getTierColor,
+  getTierTextColor,
+  Achievement,
+} from "@/lib/achievements";
+import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
+import { LeaderboardEntry, WorkoutSession } from "@/types";
 
 export default function HomePage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { profile, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({ total: 0, sessions: 0, best: 0 });
   const [topEntries, setTopEntries] = useState<LeaderboardEntry[]>([]);
+  const [challengeProgress, setChallengeProgress] = useState<{
+    current: number;
+    target: number;
+    completed: boolean;
+    percent: number;
+  } | null>(null);
+  const [challenge, setChallenge] = useState<ReturnType<
+    typeof getTodaysChallenge
+  > | null>(null);
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [globalReps, setGlobalReps] = useState(0);
 
   useEffect(() => {
-    seedDemoData();
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
+    if (authLoading) return;
 
-    if (currentUser) {
-      const workouts = getWorkouts(currentUser.id);
-      setStats({
-        total: workouts.reduce((sum, w) => sum + w.count, 0),
-        sessions: workouts.length,
-        best: workouts.reduce((max, w) => Math.max(max, w.count), 0),
+    const loadData = async () => {
+      const allWorkouts = await getWorkouts();
+      setGlobalReps(allWorkouts.reduce((sum: number, w: WorkoutSession) => sum + w.count, 0));
+
+      if (profile) {
+        const userWorkouts = await getWorkouts(profile.id);
+        setStats({
+          total: userWorkouts.reduce((sum: number, w: WorkoutSession) => sum + w.count, 0),
+          sessions: userWorkouts.length,
+          best: userWorkouts.reduce((max: number, w: WorkoutSession) => Math.max(max, w.count), 0),
+        });
+
+        // Daily challenge
+        const todaysChallenge = getTodaysChallenge();
+        setChallenge(todaysChallenge);
+        const todaysWorkouts = getTodaysWorkouts(allWorkouts, profile.id);
+        setChallengeProgress(
+          getChallengeProgress(todaysChallenge, todaysWorkouts)
+        );
+
+        // Check for new achievements
+        const freshAchievements = getNewAchievements(userWorkouts);
+        if (freshAchievements.length > 0) {
+          setNewAchievements(freshAchievements);
+          playAchievementSound();
+          triggerHaptic("heavy");
+        }
+      }
+
+      const leaderboard = await getLeaderboard();
+      setTopEntries(leaderboard.slice(0, 3));
+    };
+
+    loadData();
+  }, [authLoading, profile]);
+
+  const handleDismissAchievements = () => {
+    if (profile) {
+      getWorkouts(profile.id).then((userWorkouts) => {
+        dismissAllAchievements(userWorkouts);
+        setNewAchievements([]);
       });
     }
-
-    const leaderboard = getLeaderboard();
-    setTopEntries(leaderboard.slice(0, 3));
-  }, []);
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Achievement toast */}
+      {newAchievements.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+          {newAchievements.slice(0, 3).map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`bg-gradient-to-r ${getTierColor(achievement.tier)} border rounded-xl p-4 backdrop-blur-md animate-slide-in`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{achievement.icon}</span>
+                <div>
+                  <p className={`font-bold text-sm ${getTierTextColor(achievement.tier)}`}>
+                    {achievement.name}
+                  </p>
+                  <p className="text-neutral-400 text-xs">
+                    {achievement.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button
+            onClick={handleDismissAchievements}
+            className="w-full text-center text-neutral-500 text-xs py-2 hover:text-white transition"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Hero */}
       <div className="text-center mb-16 pt-8">
         <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-4">
@@ -42,6 +127,14 @@ export default function HomePage() {
           AI-powered push-up counter that verifies every rep.
           <span className="text-white font-medium"> Drop. Push. Prove.</span>
         </p>
+        {globalReps > 0 && (
+          <p className="text-neutral-600 text-sm mt-4">
+            <span className="text-white font-bold tabular-nums">
+              {globalReps.toLocaleString()}
+            </span>{" "}
+            push-ups counted and verified
+          </p>
+        )}
       </div>
 
       {/* CTA */}
@@ -52,15 +145,59 @@ export default function HomePage() {
         >
           Start Workout
         </Link>
-        {!user && (
+        {!profile && (
           <Link
-            href="/profile"
+            href="/auth"
             className="w-full sm:w-auto px-10 py-4 border border-white/10 text-neutral-300 rounded-xl text-lg font-medium hover:bg-white/5 transition text-center"
           >
-            Create Profile
+            Create Account
           </Link>
         )}
       </div>
+
+      {/* Daily Challenge */}
+      {profile && challenge && challengeProgress && (
+        <div className="mb-12">
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+            Daily Challenge
+          </h2>
+          <div
+            className={`drop-card rounded-2xl p-6 ${
+              challengeProgress.completed
+                ? "border-green-500/30"
+                : "drop-card-hover"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-white font-bold">{challenge.title}</h3>
+                <p className="text-neutral-500 text-sm">
+                  {challenge.description}
+                </p>
+              </div>
+              {challengeProgress.completed ? (
+                <span className="px-3 py-1 bg-green-500/15 text-green-400 text-xs font-bold rounded-full border border-green-500/20">
+                  COMPLETE
+                </span>
+              ) : (
+                <span className="text-white font-bold tabular-nums">
+                  {challengeProgress.current}/{challengeProgress.target}
+                </span>
+              )}
+            </div>
+            <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  challengeProgress.completed
+                    ? "bg-green-500"
+                    : "bg-gradient-to-r from-drop-600 to-drop-400"
+                }`}
+                style={{ width: `${challengeProgress.percent}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* How it works */}
       <div className="grid md:grid-cols-3 gap-4 mb-20">
@@ -94,27 +231,37 @@ export default function HomePage() {
           </div>
           <h3 className="text-white font-bold text-sm mb-2">Compete</h3>
           <p className="text-neutral-500 text-sm">
-            Share your results. Challenge friends. Climb the leaderboard.
+            Daily challenges, achievements, and leaderboards. Challenge your friends.
           </p>
         </div>
       </div>
 
       {/* User stats */}
-      {user && (
+      {profile && (
         <div className="mb-16">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Your Stats</h2>
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+            Your Stats
+          </h2>
           <div className="grid grid-cols-3 gap-3">
             <div className="drop-card rounded-xl p-5 text-center">
-              <p className="text-3xl font-black text-white">{stats.total.toLocaleString()}</p>
-              <p className="text-neutral-500 text-xs mt-1 uppercase tracking-wider">Total</p>
+              <p className="text-3xl font-black text-white">
+                {stats.total.toLocaleString()}
+              </p>
+              <p className="text-neutral-500 text-xs mt-1 uppercase tracking-wider">
+                Total
+              </p>
             </div>
             <div className="drop-card rounded-xl p-5 text-center">
               <p className="text-3xl font-black text-white">{stats.sessions}</p>
-              <p className="text-neutral-500 text-xs mt-1 uppercase tracking-wider">Sessions</p>
+              <p className="text-neutral-500 text-xs mt-1 uppercase tracking-wider">
+                Sessions
+              </p>
             </div>
             <div className="drop-card rounded-xl p-5 text-center">
               <p className="text-3xl font-black text-white">{stats.best}</p>
-              <p className="text-neutral-500 text-xs mt-1 uppercase tracking-wider">Best</p>
+              <p className="text-neutral-500 text-xs mt-1 uppercase tracking-wider">
+                Best
+              </p>
             </div>
           </div>
         </div>
@@ -124,8 +271,13 @@ export default function HomePage() {
       {topEntries.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium">Top Performers</h2>
-            <Link href="/leaderboard" className="text-drop-500 hover:text-drop-400 text-xs font-semibold uppercase tracking-wider">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium">
+              Top Performers
+            </h2>
+            <Link
+              href="/leaderboard"
+              className="text-drop-500 hover:text-drop-400 text-xs font-semibold uppercase tracking-wider"
+            >
               View All
             </Link>
           </div>
@@ -135,9 +287,15 @@ export default function HomePage() {
                 key={entry.userId}
                 className="flex items-center gap-3 p-3.5 drop-card drop-card-hover rounded-xl"
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                  index === 0 ? "bg-drop-600 text-white" : index === 1 ? "bg-neutral-700 text-white" : "bg-neutral-800 text-neutral-300"
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                    index === 0
+                      ? "bg-drop-600 text-white"
+                      : index === 1
+                        ? "bg-neutral-700 text-white"
+                        : "bg-neutral-800 text-neutral-300"
+                  }`}
+                >
                   {index + 1}
                 </div>
                 <div
@@ -147,12 +305,20 @@ export default function HomePage() {
                   {entry.displayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm truncate">{entry.displayName}</p>
-                  <p className="text-neutral-600 text-xs">@{entry.username}</p>
+                  <p className="text-white font-semibold text-sm truncate">
+                    {entry.displayName}
+                  </p>
+                  <p className="text-neutral-600 text-xs">
+                    @{entry.username}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-white font-bold tabular-nums">{entry.totalPushups.toLocaleString()}</p>
-                  <p className="text-neutral-600 text-[10px] uppercase tracking-wider">reps</p>
+                  <p className="text-white font-bold tabular-nums">
+                    {entry.totalPushups.toLocaleString()}
+                  </p>
+                  <p className="text-neutral-600 text-[10px] uppercase tracking-wider">
+                    reps
+                  </p>
                 </div>
               </div>
             ))}

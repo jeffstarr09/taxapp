@@ -1,13 +1,18 @@
 import { PoseKeypoint, PushupState } from "@/types";
 import { getKeypointByName, calculateAngle } from "./pose-detection";
+import { getActiveThresholds } from "./calibration";
+import { recordFrame, recordRep } from "./telemetry";
 
-const CONFIDENCE_THRESHOLD = 0.2;
-const ELBOW_DOWN_ANGLE = 110; // Relaxed from 90 — camera angle makes elbows look wider
-const ELBOW_UP_ANGLE = 150; // Relaxed from 160 — full lockout not always visible
-const BODY_ALIGNMENT_THRESHOLD = 160;
+interface Thresholds {
+  elbowDownAngle: number;
+  elbowUpAngle: number;
+  shoulderDropThreshold: number;
+  minFramesBetweenReps: number;
+  confidenceThreshold: number;
+  bodyAlignmentThreshold: number;
+}
+
 const SMOOTHING_WINDOW = 5;
-const MIN_FRAMES_BETWEEN_REPS = 8;
-const SHOULDER_DROP_THRESHOLD = 15; // Minimum px shoulder must drop for a "down"
 
 interface AnalyzerState {
   phase: "up" | "down" | "transition";
@@ -25,11 +30,16 @@ interface AnalyzerState {
   // Shoulder tracking
   shoulderYAtUp: number | null;
   shoulderDropConfirmed: boolean;
+  // Per-rep tracking for telemetry
+  currentRepElbowMin: number;
+  currentRepElbowMax: number;
+  // Active thresholds
+  thresholds: Thresholds;
 }
 
 let state: AnalyzerState = createFreshState();
 
-function createFreshState(): AnalyzerState {
+function createFreshState(userId?: string): AnalyzerState {
   return {
     phase: "up",
     count: 0,
@@ -44,15 +54,22 @@ function createFreshState(): AnalyzerState {
     shoulderYBuffer: [],
     shoulderYAtUp: null,
     shoulderDropConfirmed: false,
+    currentRepElbowMin: 180,
+    currentRepElbowMax: 0,
+    thresholds: getActiveThresholds(userId),
   };
 }
 
-export function resetAnalyzer(): void {
-  state = createFreshState();
+export function resetAnalyzer(userId?: string): void {
+  state = createFreshState(userId);
 }
 
 export function getRepTimestamps(): number[] {
   return [...state.repTimestamps];
+}
+
+export function getActiveAnalyzerThresholds(): Thresholds {
+  return { ...state.thresholds };
 }
 
 function smoothedAverage(buffer: number[]): number {
@@ -66,6 +83,8 @@ function pushToBuffer(buffer: number[], value: number, maxLen: number): void {
 }
 
 export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
+  const t = state.thresholds;
+
   const leftShoulder = getKeypointByName(keypoints, "left_shoulder");
   const rightShoulder = getKeypointByName(keypoints, "right_shoulder");
   const leftElbow = getKeypointByName(keypoints, "left_elbow");
@@ -79,14 +98,21 @@ export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
 
   // Accept EITHER side having enough confident keypoints
   const leftConfidence = [leftShoulder, leftElbow, leftWrist, leftHip].every(
-    (p) => p && p.score > CONFIDENCE_THRESHOLD
+    (p) => p && p.score > t.confidenceThreshold
   );
   const rightConfidence = [rightShoulder, rightElbow, rightWrist, rightHip].every(
-    (p) => p && p.score > CONFIDENCE_THRESHOLD
+    (p) => p && p.score > t.confidenceThreshold
   );
 
   if (!leftConfidence && !rightConfidence) {
     state.consecutiveBadFrames++;
+    recordFrame({
+      hasPose: false,
+      confidence: 0,
+      elbowAngle: state.lastElbowAngle,
+      shoulderY: 0,
+      bodyAlignment: state.lastBodyAlignment,
+    });
     return {
       phase: state.phase,
       count: state.count,
@@ -119,6 +145,10 @@ export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
   const elbowAngle = smoothedAverage(state.elbowAngleBuffer);
   state.lastElbowAngle = elbowAngle;
 
+  // Track per-rep min/max
+  state.currentRepElbowMin = Math.min(state.currentRepElbowMin, elbowAngle);
+  state.currentRepElbowMax = Math.max(state.currentRepElbowMax, elbowAngle);
+
   // Track shoulder Y position (increases as user goes down in screen coords)
   const shoulderY = shoulder.y;
   pushToBuffer(state.shoulderYBuffer, shoulderY, SMOOTHING_WINDOW);
@@ -126,18 +156,32 @@ export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
 
   // Calculate body alignment (shoulder-hip-ankle)
   let bodyAlignment = 180;
-  if (ankle && ankle.score > CONFIDENCE_THRESHOLD) {
+  if (ankle && ankle.score > t.confidenceThreshold) {
     bodyAlignment = calculateAngle(shoulder, hip, ankle);
   }
   state.lastBodyAlignment = bodyAlignment;
+
+  // Avg confidence for this frame
+  const avgConfidence = useLeft
+    ? (leftShoulder!.score + leftElbow!.score + leftWrist!.score + leftHip!.score) / 4
+    : (rightShoulder!.score + rightElbow!.score + rightWrist!.score + rightHip!.score) / 4;
+
+  // Record telemetry
+  recordFrame({
+    hasPose: true,
+    confidence: avgConfidence,
+    elbowAngle,
+    shoulderY: smoothedShoulderY,
+    bodyAlignment,
+  });
 
   // Form scoring
   let formScore = 100;
   let feedback = "";
 
   // Check body alignment
-  if (bodyAlignment < BODY_ALIGNMENT_THRESHOLD) {
-    const penalty = Math.min(40, (BODY_ALIGNMENT_THRESHOLD - bodyAlignment) * 2);
+  if (bodyAlignment < t.bodyAlignmentThreshold) {
+    const penalty = Math.min(40, (t.bodyAlignmentThreshold - bodyAlignment) * 2);
     formScore -= penalty;
     if (bodyAlignment < 140) {
       feedback = "Keep your body straight — avoid sagging hips";
@@ -154,25 +198,25 @@ export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
     state.shoulderYAtUp = smoothedShoulderY;
   }
 
-  if (elbowAngle <= ELBOW_DOWN_ANGLE) {
+  if (elbowAngle <= t.elbowDownAngle) {
     state.phase = "down";
     state.wasDown = true;
 
     // Confirm shoulder actually dropped
     if (state.shoulderYAtUp !== null) {
       const drop = smoothedShoulderY - state.shoulderYAtUp;
-      if (drop > SHOULDER_DROP_THRESHOLD) {
+      if (drop > t.shoulderDropThreshold) {
         state.shoulderDropConfirmed = true;
       }
     }
 
     if (!feedback) feedback = "Good depth! Now push up";
-  } else if (elbowAngle >= ELBOW_UP_ANGLE) {
+  } else if (elbowAngle >= t.elbowUpAngle) {
     // Count a rep when transitioning from down to up
     if (
       state.wasDown &&
       previousPhase !== "up" &&
-      state.framesSinceLastRep > MIN_FRAMES_BETWEEN_REPS
+      state.framesSinceLastRep > t.minFramesBetweenReps
     ) {
       state.count++;
       state.wasDown = false;
@@ -181,6 +225,22 @@ export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
       state.formScores.push(formScore);
       state.repTimestamps.push(Date.now());
       state.framesSinceLastRep = 0;
+
+      // Record rep telemetry
+      const lastTimestamp = state.repTimestamps.length >= 2
+        ? state.repTimestamps[state.repTimestamps.length - 1] - state.repTimestamps[state.repTimestamps.length - 2]
+        : 0;
+      recordRep({
+        elbowMin: state.currentRepElbowMin,
+        elbowMax: state.currentRepElbowMax,
+        duration: lastTimestamp,
+        formScore,
+      });
+
+      // Reset per-rep tracking
+      state.currentRepElbowMin = 180;
+      state.currentRepElbowMax = 0;
+
       feedback =
         formScore >= 80
           ? "Great rep!"

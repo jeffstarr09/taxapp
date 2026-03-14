@@ -3,31 +3,29 @@
 import { useState, useEffect, useCallback } from "react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import AddFriend from "@/components/AddFriend";
-import { getLeaderboard, getCurrentUser, seedDemoData } from "@/lib/storage";
-import { LeaderboardEntry, User } from "@/types";
+import { useAuth } from "@/lib/auth-context";
+import { getLeaderboard } from "@/lib/storage";
+import { LeaderboardEntry } from "@/types";
 
 type TabType = "global" | "friends";
 
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<TabType>("global");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [user, setUser] = useState<User | null>(null);
+  const { profile, loading: authLoading } = useAuth();
 
-  const loadData = useCallback(() => {
-    seedDemoData();
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-
-    const leaderboard = getLeaderboard(
+  const loadData = useCallback(async () => {
+    const leaderboard = await getLeaderboard(
       tab === "friends",
-      currentUser?.id
+      profile?.id
     );
     setEntries(leaderboard);
-  }, [tab]);
+  }, [tab, profile]);
 
   useEffect(() => {
+    if (authLoading) return;
     loadData();
-  }, [loadData]);
+  }, [loadData, authLoading]);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
@@ -63,16 +61,16 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      <LeaderboardTable entries={entries} currentUserId={user?.id} />
+      <LeaderboardTable entries={entries} currentUserId={profile?.id} />
 
-      {!user && (
+      {!profile && (
         <div className="mt-8 drop-card rounded-xl p-6 text-center">
-          <p className="text-neutral-400 text-sm mb-3">Create a profile to track your ranking</p>
+          <p className="text-neutral-400 text-sm mb-3">Create an account to track your ranking</p>
           <a
-            href="/profile"
+            href="/auth"
             className="inline-block px-6 py-2.5 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-semibold text-sm"
           >
-            Create Profile
+            Sign In
           </a>
         </div>
       )}
