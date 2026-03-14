@@ -52,9 +52,7 @@ create policy "Users can update own profile"
 create policy "Users can insert own profile"
   on public.profiles for insert with check (auth.uid() = id);
 
--- Workouts: anyone can read (for leaderboard), users can insert/update their own
-create policy "Workouts are viewable by everyone"
-  on public.profiles for select using (true);
+-- Workouts: anyone can read (for leaderboard), users can insert their own
 
 create policy "Users can insert own workouts"
   on public.workouts for insert with check (auth.uid() = user_id);
