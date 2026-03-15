@@ -20,6 +20,7 @@ import {
 import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
 import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
 import { getCalibrationProfile } from "@/lib/calibration";
+import { trackWorkoutEvent, trackEvent } from "@/lib/analytics";
 
 export default function WorkoutPage() {
   const { profile } = useAuth();
@@ -115,6 +116,7 @@ export default function WorkoutPage() {
     setIsActive(true);
     playStartSound();
     triggerHaptic("medium");
+    trackWorkoutEvent("started");
   };
 
   const handleStop = () => {
@@ -132,6 +134,11 @@ export default function WorkoutPage() {
     );
     saveTelemetrySession(session);
     setTelemetrySessionId(session.id);
+    trackWorkoutEvent("completed", {
+      repCount: pushupState.count,
+      duration: elapsed,
+      formScore: pushupState.formScore,
+    });
   };
 
   const handleSave = () => {
@@ -148,6 +155,11 @@ export default function WorkoutPage() {
     };
     saveWorkout(workout);
     setSaved(true);
+    trackEvent("workout_saved", {
+      repCount: workout.count,
+      duration: workout.duration,
+      formScore: workout.averageFormScore,
+    });
   };
 
   const handleCloseSummary = () => {

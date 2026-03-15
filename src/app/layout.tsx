@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import AnalyticsProvider from "@/components/AnalyticsProvider";
 import { AuthProvider } from "@/lib/auth-context";
 
 export const viewport: Viewport = {
@@ -75,10 +76,12 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased noise-bg">
         <AuthProvider>
-          <Navbar />
-          <main className="pt-4 pb-24 md:pt-20 md:pb-4 min-h-screen relative z-10">
-            {children}
-          </main>
+          <AnalyticsProvider>
+            <Navbar />
+            <main className="pt-4 pb-24 md:pt-20 md:pb-4 min-h-screen relative z-10">
+              {children}
+            </main>
+          </AnalyticsProvider>
         </AuthProvider>
       </body>
     </html>

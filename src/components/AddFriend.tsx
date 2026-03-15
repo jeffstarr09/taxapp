@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getProfileByUsername, addFriend } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
 
 interface AddFriendProps {
   onFriendAdded: () => void;
@@ -40,6 +41,7 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
     }
 
     await addFriend(profile.id, friend.id);
+    trackEvent("friend_added");
     setMessage({ text: `Added ${friend.displayName}`, type: "success" });
     setUsername("");
     setLoading(false);

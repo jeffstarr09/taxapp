@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 interface WorkoutSummaryProps {
   count: number;
@@ -42,6 +43,7 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
   const shareText = getShareText(count, gradeInfo.grade);
 
   const handleShare = async () => {
+    trackEvent("workout_shared", { method: "native", repCount: count });
     if (navigator.share) {
       try {
         await navigator.share({
@@ -75,6 +77,7 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
   const handleFeedback = (rating: "accurate" | "overcounted" | "undercounted") => {
     onFeedback?.({ rating });
     setFeedbackGiven(true);
+    trackEvent("workout_feedback", { rating, repCount: count });
   };
 
   return (
