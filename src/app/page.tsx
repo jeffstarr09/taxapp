@@ -125,7 +125,7 @@ export default function HomePage() {
         <div className="red-line max-w-32 mx-auto mb-6" />
         <p className="text-neutral-400 text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
           AI-powered workout counter that verifies every rep.
-          <span className="text-white font-medium"> Drop. Push. Prove.</span>
+          <span className="text-white font-medium"> Compete with friends. Climb the leaderboard.</span>
         </p>
         {globalReps > 0 && (
           <p className="text-neutral-600 text-sm mt-4">
