@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
+import { trackEvent } from "@/lib/analytics";
 
 interface Profile {
   id: string;
@@ -90,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
     if (error) return { error: error.message };
+    trackEvent("user_signup", { username });
     return { error: null };
   };
 
@@ -99,10 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
     });
     if (error) return { error: error.message };
+    trackEvent("user_login");
     return { error: null };
   };
 
   const signOut = async () => {
+    trackEvent("user_logout");
     await supabase.auth.signOut();
     setProfile(null);
   };

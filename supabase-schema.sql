@@ -93,6 +93,34 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Analytics events table (tracks all user interactions)
+create table public.analytics_events (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete set null,
+  event_name text not null,
+  event_data jsonb default '{}'::jsonb,
+  page text,
+  session_id text,
+  created_at timestamptz default now() not null
+);
+
+-- Indexes for analytics queries
+create index analytics_events_user_id_idx on public.analytics_events (user_id);
+create index analytics_events_event_name_idx on public.analytics_events (event_name);
+create index analytics_events_created_at_idx on public.analytics_events (created_at desc);
+create index analytics_events_session_id_idx on public.analytics_events (session_id);
+
+-- RLS for analytics
+alter table public.analytics_events enable row level security;
+
+-- Anyone can insert events (including anonymous users)
+create policy "Anyone can insert analytics events"
+  on public.analytics_events for insert with check (true);
+
+-- Only the user can read their own events (admin reads via service role)
+create policy "Users can read own analytics"
+  on public.analytics_events for select using (auth.uid() = user_id);
+
 -- Leaderboard view for fast queries
 create or replace view public.leaderboard as
 select
