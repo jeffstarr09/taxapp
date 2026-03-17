@@ -6,7 +6,7 @@ import CameraView from "@/components/CameraView";
 import WorkoutHUD from "@/components/WorkoutHUD";
 import WorkoutSummary from "@/components/WorkoutSummary";
 import Tutorial, { hasSeen as tutorialSeen } from "@/components/Tutorial";
-import { PushupState, WorkoutSession } from "@/types";
+import { ExerciseState, ExerciseType, WorkoutSession } from "@/types";
 import { useAuth } from "@/lib/auth-context";
 import { saveWorkout } from "@/lib/storage";
 import {
@@ -21,11 +21,13 @@ import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedb
 import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
 import { getCalibrationProfile } from "@/lib/calibration";
 import { trackWorkoutEvent, trackEvent } from "@/lib/analytics";
+import { getExerciseConfig, getAvailableExercises } from "@/lib/exercise-config";
 
 export default function WorkoutPage() {
   const { profile } = useAuth();
+  const [exerciseType, setExerciseType] = useState<ExerciseType>("pushup");
   const [isActive, setIsActive] = useState(false);
-  const [pushupState, setPushupState] = useState<PushupState>({
+  const [exerciseState, setExerciseState] = useState<ExerciseState>({
     phase: "up",
     count: 0,
     formScore: 0,
@@ -47,6 +49,9 @@ export default function WorkoutPage() {
   const [showTutorial, setShowTutorial] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const prevCountRef = useRef(0);
+
+  const exerciseConfig = getExerciseConfig(exerciseType);
+  const availableExercises = getAvailableExercises();
 
   useEffect(() => {
     if (!tutorialSeen()) {
@@ -71,8 +76,8 @@ export default function WorkoutPage() {
     };
   }, [isActive]);
 
-  const handleUpdate = useCallback((state: PushupState) => {
-    setPushupState(state);
+  const handleUpdate = useCallback((state: ExerciseState) => {
+    setExerciseState(state);
     if (state.count > prevCountRef.current) {
       prevCountRef.current = state.count;
 
@@ -102,7 +107,7 @@ export default function WorkoutPage() {
 
   const handleStart = () => {
     prevCountRef.current = 0;
-    setPushupState({
+    setExerciseState({
       phase: "up",
       count: 0,
       formScore: 0,
@@ -135,9 +140,10 @@ export default function WorkoutPage() {
     saveTelemetrySession(session);
     setTelemetrySessionId(session.id);
     trackWorkoutEvent("completed", {
-      repCount: pushupState.count,
+      exerciseType,
+      repCount: exerciseState.count,
       duration: elapsed,
-      formScore: pushupState.formScore,
+      formScore: exerciseState.formScore,
     });
   };
 
@@ -146,6 +152,7 @@ export default function WorkoutPage() {
     const workout: WorkoutSession = {
       id: uuidv4(),
       userId: profile?.id || "anonymous",
+      exerciseType,
       count: sessionResult.count,
       duration: sessionResult.duration,
       averageFormScore: sessionResult.avgForm,
@@ -156,6 +163,7 @@ export default function WorkoutPage() {
     saveWorkout(workout);
     setSaved(true);
     trackEvent("workout_saved", {
+      exerciseType,
       repCount: workout.count,
       duration: workout.duration,
       formScore: workout.averageFormScore,
@@ -187,6 +195,26 @@ export default function WorkoutPage() {
         )}
       </div>
 
+      {/* Exercise selector — only shown when not active */}
+      {!isActive && availableExercises.length > 1 && (
+        <div className="flex gap-2 mb-6">
+          {availableExercises.map((ex) => (
+            <button
+              key={ex.type}
+              onClick={() => setExerciseType(ex.type)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                exerciseType === ex.type
+                  ? "bg-drop-600 text-white"
+                  : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
+              }`}
+            >
+              <span>{ex.icon}</span>
+              {ex.labelPlural}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-[1fr,300px] gap-4">
         {/* Camera feed */}
         <div className="relative">
@@ -215,7 +243,7 @@ export default function WorkoutPage() {
               </div>
               <h2 className="text-lg font-bold text-white mb-1">Setup Checklist</h2>
               <p className="text-neutral-500 text-xs text-center mb-5 max-w-xs">
-                Follow these steps for the most accurate push-up tracking
+                Follow these steps for the most accurate {exerciseConfig.label.toLowerCase()} tracking
               </p>
 
               <div className="w-full max-w-sm space-y-3">
@@ -303,18 +331,13 @@ export default function WorkoutPage() {
 
         {/* HUD sidebar */}
         <div className="lg:sticky lg:top-24">
-          <WorkoutHUD state={pushupState} elapsed={elapsed} isActive={isActive} />
+          <WorkoutHUD state={exerciseState} elapsed={elapsed} isActive={isActive} />
 
           {!isActive && (
             <div className="mt-4 drop-card rounded-xl p-4">
               <h3 className="text-white font-semibold text-xs uppercase tracking-wider mb-3">Tips</h3>
               <ul className="text-neutral-500 text-xs space-y-2">
-                {[
-                  "Side-angle camera works best",
-                  "Ensure full body is in frame",
-                  "Good lighting improves accuracy",
-                  "Go all the way down & up",
-                ].map((tip) => (
+                {exerciseConfig.setupTips.map((tip) => (
                   <li key={tip} className="flex items-start gap-2">
                     <span className="text-drop-500 mt-0.5 text-[10px]">&#x25CF;</span>
                     {tip}
@@ -331,6 +354,7 @@ export default function WorkoutPage() {
           count={sessionResult.count}
           duration={sessionResult.duration}
           averageForm={sessionResult.avgForm}
+          exerciseType={exerciseType}
           onClose={handleCloseSummary}
           onSave={handleSave}
           saved={saved}

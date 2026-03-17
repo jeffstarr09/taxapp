@@ -124,7 +124,7 @@ export default function HomePage() {
         </h1>
         <div className="red-line max-w-32 mx-auto mb-6" />
         <p className="text-neutral-400 text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
-          AI-powered push-up counter that verifies every rep.
+          AI-powered workout counter that verifies every rep.
           <span className="text-white font-medium"> Drop. Push. Prove.</span>
         </p>
         {globalReps > 0 && (
@@ -132,7 +132,7 @@ export default function HomePage() {
             <span className="text-white font-bold tabular-nums">
               {globalReps.toLocaleString()}
             </span>{" "}
-            push-ups counted and verified
+            reps counted and verified
           </p>
         )}
       </div>
@@ -314,7 +314,7 @@ export default function HomePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-white font-bold tabular-nums">
-                    {entry.totalPushups.toLocaleString()}
+                    {entry.totalReps.toLocaleString()}
                   </p>
                   <p className="text-neutral-600 text-[10px] uppercase tracking-wider">
                     reps

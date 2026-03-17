@@ -37,7 +37,7 @@ export interface SessionTelemetry {
   wasCalibrated: boolean;
 }
 
-const TELEMETRY_KEY = "pushup_telemetry";
+const TELEMETRY_KEY = "drop_telemetry";
 const MAX_STORED_SESSIONS = 50;
 
 // Live collector (accumulates during a session)

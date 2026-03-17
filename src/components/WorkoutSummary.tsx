@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { ExerciseType } from "@/types";
+import { getExerciseConfig } from "@/lib/exercise-config";
 
 interface WorkoutSummaryProps {
   count: number;
   duration: number;
   averageForm: number;
+  exerciseType?: ExerciseType;
   onClose: () => void;
   onSave: () => void;
   saved: boolean;
@@ -30,24 +33,25 @@ function getGrade(form: number): { grade: string; color: string; message: string
   return { grade: "F", color: "text-drop-400", message: "Slow down. Focus on form." };
 }
 
-function getShareText(count: number, grade: string): string {
-  return `I just dropped ${count} push-ups and scored ${grade} form on DROP — the AI push-up counter. Think you can beat that?`;
+function getShareText(count: number, grade: string, exerciseLabel: string): string {
+  return `I just dropped ${count} ${exerciseLabel.toLowerCase()} and scored ${grade} form on DROP — the AI workout counter. Think you can beat that?`;
 }
 
-export default function WorkoutSummary({ count, duration, averageForm, onClose, onSave, saved, onFeedback }: WorkoutSummaryProps) {
+export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, onSave, saved, onFeedback }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const [shared, setShared] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
 
-  const shareText = getShareText(count, gradeInfo.grade);
+  const config = getExerciseConfig(exerciseType);
+  const shareText = getShareText(count, gradeInfo.grade, config.labelPlural);
 
   const handleShare = async () => {
     trackEvent("workout_shared", { method: "native", repCount: count });
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `DROP — ${count} Push-ups`,
+          title: `DROP — ${count} ${config.labelPlural}`,
           text: shareText,
         });
         setShared(true);
@@ -93,7 +97,7 @@ export default function WorkoutSummary({ count, duration, averageForm, onClose, 
         {/* Big count */}
         <div className="text-center mb-8">
           <p className="text-[7rem] leading-none font-black text-white tracking-tighter drop-text-glow">{count}</p>
-          <p className="text-neutral-400 text-sm uppercase tracking-[0.2em] mt-2">push-ups</p>
+          <p className="text-neutral-400 text-sm uppercase tracking-[0.2em] mt-2">{config.labelPlural.toLowerCase()}</p>
         </div>
 
         {/* Stats */}

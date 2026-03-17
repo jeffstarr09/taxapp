@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getWorkouts, updateProfile, getFriends } from "@/lib/storage";
 import { getUnlockedAchievements, ACHIEVEMENTS, getTierColor, getTierTextColor } from "@/lib/achievements";
 import { User, WorkoutSession } from "@/types";
+import { getExerciseConfig } from "@/lib/exercise-config";
 
 const AVATAR_COLORS = [
   "#dc2626", "#ef4444", "#f97316", "#eab308", "#22c55e",
@@ -105,7 +106,7 @@ export default function ProfilePage() {
     );
   }
 
-  const totalPushups = workouts.reduce((sum, w) => sum + w.count, 0);
+  const totalReps = workouts.reduce((sum, w) => sum + w.count, 0);
   const avgForm =
     workouts.length > 0
       ? Math.round(workouts.reduce((sum, w) => sum + w.averageFormScore, 0) / workouts.length)
@@ -194,7 +195,7 @@ export default function ProfilePage() {
       <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Stats</h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
         <div className="drop-card rounded-xl p-4 text-center">
-          <p className="text-2xl font-black text-white">{totalPushups.toLocaleString()}</p>
+          <p className="text-2xl font-black text-white">{totalReps.toLocaleString()}</p>
           <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Total Reps</p>
         </div>
         <div className="drop-card rounded-xl p-4 text-center">
@@ -262,7 +263,9 @@ export default function ProfilePage() {
                   className="flex items-center justify-between p-3.5 drop-card rounded-xl"
                 >
                   <div>
-                    <p className="text-white font-bold text-sm">{workout.count} reps</p>
+                    <p className="text-white font-bold text-sm">
+                      {workout.count} {getExerciseConfig(workout.exerciseType ?? "pushup").labelPlural.toLowerCase()}
+                    </p>
                     <p className="text-neutral-600 text-xs">
                       {new Date(workout.date).toLocaleDateString("en-US", {
                         month: "short",

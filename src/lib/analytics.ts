@@ -73,6 +73,7 @@ export function trackPageView(page?: string): void {
 export function trackWorkoutEvent(
   action: "started" | "completed" | "abandoned",
   data: {
+    exerciseType?: string;
     repCount?: number;
     duration?: number;
     formScore?: number;

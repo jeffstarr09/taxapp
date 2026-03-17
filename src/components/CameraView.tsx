@@ -3,11 +3,11 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { detectPose, initPoseDetector } from "@/lib/pose-detection";
 import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
-import { PoseKeypoint, PushupState } from "@/types";
+import { PoseKeypoint, ExerciseState } from "@/types";
 
 interface CameraViewProps {
   isActive: boolean;
-  onUpdate: (state: PushupState) => void;
+  onUpdate: (state: ExerciseState) => void;
   onSessionEnd: (count: number, duration: number, avgForm: number, timestamps: number[]) => void;
 }
 
@@ -261,7 +261,7 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
       setError(
         err instanceof Error
           ? err.message.includes("Permission")
-            ? "Camera access denied. Allow camera access to track push-ups."
+            ? "Camera access denied. Allow camera access to track your workout."
             : `Camera error: ${err.message}`
           : "Failed to access camera"
       );

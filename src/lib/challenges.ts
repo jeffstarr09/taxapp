@@ -19,7 +19,7 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   {
     id: "rep-30",
     title: "Thirty Drop",
-    description: "Do 30 push-ups today",
+    description: "Do 30 reps today",
     target: 30,
     unit: "reps",
     check: (w) => w.reduce((s, x) => s + x.count, 0),
@@ -27,7 +27,7 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   {
     id: "rep-50",
     title: "Half Century",
-    description: "Do 50 push-ups today",
+    description: "Do 50 reps today",
     target: 50,
     unit: "reps",
     check: (w) => w.reduce((s, x) => s + x.count, 0),
@@ -35,7 +35,7 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   {
     id: "rep-75",
     title: "75 Club",
-    description: "Do 75 push-ups today",
+    description: "Do 75 reps today",
     target: 75,
     unit: "reps",
     check: (w) => w.reduce((s, x) => s + x.count, 0),
@@ -43,7 +43,7 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   {
     id: "rep-100",
     title: "Century Push",
-    description: "Do 100 push-ups today",
+    description: "Do 100 reps today",
     target: 100,
     unit: "reps",
     check: (w) => w.reduce((s, x) => s + x.count, 0),
@@ -85,7 +85,7 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   {
     id: "single-25",
     title: "Quick Set",
-    description: "25 push-ups in a single session",
+    description: "25 reps in a single session",
     target: 1,
     unit: "sessions",
     check: (w) => w.filter((x) => x.count >= 25).length,
@@ -93,7 +93,7 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   {
     id: "single-40",
     title: "Power Set",
-    description: "40 push-ups in a single session",
+    description: "40 reps in a single session",
     target: 1,
     unit: "sessions",
     check: (w) => w.filter((x) => x.count >= 40).length,

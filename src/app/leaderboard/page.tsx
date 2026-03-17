@@ -5,22 +5,27 @@ import LeaderboardTable from "@/components/LeaderboardTable";
 import AddFriend from "@/components/AddFriend";
 import { useAuth } from "@/lib/auth-context";
 import { getLeaderboard } from "@/lib/storage";
-import { LeaderboardEntry } from "@/types";
+import { LeaderboardEntry, ExerciseType } from "@/types";
+import { getAvailableExercises } from "@/lib/exercise-config";
 
 type TabType = "global" | "friends";
 
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<TabType>("global");
+  const [exerciseType, setExerciseType] = useState<ExerciseType>("pushup");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: authLoading } = useAuth();
+
+  const availableExercises = getAvailableExercises();
 
   const loadData = useCallback(async () => {
     const leaderboard = await getLeaderboard(
       tab === "friends",
-      profile?.id
+      profile?.id,
+      exerciseType
     );
     setEntries(leaderboard);
-  }, [tab, profile]);
+  }, [tab, profile, exerciseType]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -30,6 +35,26 @@ export default function LeaderboardPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-black text-white tracking-tight mb-6">Leaderboard</h1>
+
+      {/* Exercise type filter */}
+      {availableExercises.length > 1 && (
+        <div className="flex gap-2 mb-4">
+          {availableExercises.map((ex) => (
+            <button
+              key={ex.type}
+              onClick={() => setExerciseType(ex.type)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                exerciseType === ex.type
+                  ? "bg-drop-600 text-white"
+                  : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
+              }`}
+            >
+              <span>{ex.icon}</span>
+              {ex.labelPlural}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6">

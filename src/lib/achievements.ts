@@ -22,7 +22,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "century",
     name: "Century Club",
-    description: "100 total push-ups",
+    description: "100 total reps",
     icon: "💯",
     tier: "bronze",
     condition: (w) => w.reduce((s, x) => s + x.count, 0) >= 100,
@@ -30,7 +30,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "five-hundred",
     name: "Half K",
-    description: "500 total push-ups",
+    description: "500 total reps",
     icon: "🔥",
     tier: "silver",
     condition: (w) => w.reduce((s, x) => s + x.count, 0) >= 500,
@@ -38,7 +38,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "thousand",
     name: "1K Club",
-    description: "1,000 total push-ups",
+    description: "1,000 total reps",
     icon: "⚡",
     tier: "gold",
     condition: (w) => w.reduce((s, x) => s + x.count, 0) >= 1000,
@@ -46,7 +46,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "five-thousand",
     name: "Iron Body",
-    description: "5,000 total push-ups",
+    description: "5,000 total reps",
     icon: "🏆",
     tier: "legendary",
     condition: (w) => w.reduce((s, x) => s + x.count, 0) >= 5000,
@@ -56,7 +56,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "twenty-set",
     name: "Warm Up",
-    description: "20 push-ups in one session",
+    description: "20 reps in one session",
     icon: "🌡️",
     tier: "bronze",
     condition: (w) => w.some((x) => x.count >= 20),
@@ -64,7 +64,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "fifty-set",
     name: "Half Century",
-    description: "50 push-ups in one session",
+    description: "50 reps in one session",
     icon: "💪",
     tier: "silver",
     condition: (w) => w.some((x) => x.count >= 50),
@@ -72,7 +72,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "hundred-set",
     name: "Beast Mode",
-    description: "100 push-ups in one session",
+    description: "100 reps in one session",
     icon: "🦍",
     tier: "gold",
     condition: (w) => w.some((x) => x.count >= 100),
@@ -182,7 +182,7 @@ function getStreak(workouts: WorkoutSession[]): number {
   return streak;
 }
 
-const SEEN_ACHIEVEMENTS_KEY = "pushup_seen_achievements";
+const SEEN_ACHIEVEMENTS_KEY = "drop_seen_achievements";
 
 function getSeenAchievements(): string[] {
   if (typeof window === "undefined") return [];
