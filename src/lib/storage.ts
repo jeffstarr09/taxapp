@@ -118,17 +118,19 @@ export async function getLeaderboard(
   const { data } = await query;
   if (!data) return [];
 
-  let entries: LeaderboardEntry[] = data.map((row) => ({
-    userId: row.user_id,
-    username: row.username,
-    displayName: row.display_name,
-    avatarColor: row.avatar_color,
-    totalReps: row.total_reps,
-    bestSession: row.best_session,
-    averageForm: row.average_form,
-    workoutCount: row.workout_count,
-    streak: 0, // computed client-side for now
-  }));
+  let entries: LeaderboardEntry[] = data
+    .filter((row) => row.total_reps > 0)
+    .map((row) => ({
+      userId: row.user_id,
+      username: row.username,
+      displayName: row.display_name,
+      avatarColor: row.avatar_color,
+      totalReps: row.total_reps,
+      bestSession: row.best_session,
+      averageForm: row.average_form,
+      workoutCount: row.workout_count,
+      streak: 0, // computed client-side for now
+    }));
 
   if (friendsOnly && currentUserId) {
     const friendIds = await getFriendIds(currentUserId);
