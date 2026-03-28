@@ -86,7 +86,15 @@ export async function getWorkouts(
 }
 
 export async function saveWorkout(workout: WorkoutSession): Promise<void> {
-  const { error } = await getSupabase().from("workouts").insert({
+  const supabase = getSupabase();
+
+  // Verify we have an authenticated session before attempting insert
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Not authenticated — sign in to save workouts");
+  }
+
+  const { error } = await supabase.from("workouts").insert({
     id: workout.id,
     user_id: workout.userId,
     exercise_type: workout.exerciseType,
@@ -98,6 +106,7 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
     verified: workout.verified,
   });
   if (error) {
+    console.error("Failed to save workout:", error);
     throw new Error(error.message);
   }
 }

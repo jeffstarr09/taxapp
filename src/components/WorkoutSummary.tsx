@@ -207,15 +207,15 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
         </div>
 
         {/* Save status */}
-        <div className="mb-4 p-2.5 rounded-xl border text-center">
+        <div className="mb-4">
           {saving && (
-            <div className="border-white/10 flex items-center justify-center gap-2">
+            <div className="p-2.5 rounded-xl border border-white/10 text-center flex items-center justify-center gap-2">
               <div className="w-3 h-3 border-2 border-drop-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-neutral-400 text-xs font-medium">Saving to leaderboard...</p>
             </div>
           )}
           {saved && !saving && (
-            <div className="border-green-500/20 bg-green-500/5">
+            <div className="p-2.5 rounded-xl border border-green-500/20 bg-green-500/5 text-center">
               <p className="text-green-400 text-xs font-medium flex items-center justify-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
@@ -225,8 +225,9 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
             </div>
           )}
           {saveError && !saving && (
-            <div className="border-drop-500/30 bg-drop-500/10">
-              <p className="text-drop-400 text-xs font-medium mb-2">Failed to save. Check your connection.</p>
+            <div className="p-3 rounded-xl border border-drop-500/30 bg-drop-500/10 text-center">
+              <p className="text-drop-400 text-sm font-medium mb-2">Workout could not be saved</p>
+              <p className="text-neutral-500 text-xs mb-3">Make sure you&apos;re signed in and have an internet connection.</p>
               <button
                 onClick={onRetrySave}
                 className="px-4 py-1.5 bg-drop-600 text-white rounded-lg text-xs font-semibold hover:bg-drop-700 transition"
