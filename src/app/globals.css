@@ -125,6 +125,14 @@ body {
   z-index: 0;
 }
 
+/* Hide navbar and main content when fullscreen workout is active */
+body.workout-active > * {
+  visibility: hidden !important;
+}
+body.workout-active > [data-workout-overlay] {
+  visibility: visible !important;
+}
+
 /* Phase badges */
 .phase-down {
   background: rgba(220, 38, 38, 0.2);

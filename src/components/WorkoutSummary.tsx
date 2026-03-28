@@ -87,7 +87,7 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+    <div data-workout-overlay className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
       <div className="drop-card rounded-3xl p-8 max-w-md w-full drop-glow max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="text-center mb-2">
