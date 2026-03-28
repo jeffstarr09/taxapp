@@ -67,6 +67,18 @@ export default function WorkoutPage() {
     setPortalTarget(document.body);
   }, []);
 
+  // Toggle body class to hide navbar/layout when workout is active
+  useEffect(() => {
+    if (isActive) {
+      document.body.classList.add("workout-active");
+    } else {
+      document.body.classList.remove("workout-active");
+    }
+    return () => {
+      document.body.classList.remove("workout-active");
+    };
+  }, [isActive]);
+
   useEffect(() => {
     if (!tutorialSeen()) {
       setShowTutorial(true);
@@ -122,13 +134,18 @@ export default function WorkoutPage() {
   // Auto-save workout when session result is available
   useEffect(() => {
     if (!sessionResult || saved || saving) return;
+    // Cannot save without a signed-in user — Supabase RLS will reject it
+    if (!profile?.id) {
+      setSaveError(true);
+      return;
+    }
 
     const autoSave = async () => {
       setSaving(true);
       setSaveError(false);
       const workout: WorkoutSession = {
         id: uuidv4(),
-        userId: profile?.id || "anonymous",
+        userId: profile.id,
         exerciseType,
         count: sessionResult.count,
         duration: sessionResult.duration,
@@ -155,7 +172,7 @@ export default function WorkoutPage() {
 
     autoSave();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionResult]);
+  }, [sessionResult, profile]);
 
   const handleStart = () => {
     prevCountRef.current = 0;
@@ -201,12 +218,12 @@ export default function WorkoutPage() {
   };
 
   const handleRetrySave = async () => {
-    if (!sessionResult || saved || saving) return;
+    if (!sessionResult || saved || saving || !profile?.id) return;
     setSaving(true);
     setSaveError(false);
     const workout: WorkoutSession = {
       id: uuidv4(),
-      userId: profile?.id || "anonymous",
+      userId: profile.id,
       exerciseType,
       count: sessionResult.count,
       duration: sessionResult.duration,
@@ -254,7 +271,11 @@ export default function WorkoutPage() {
 
   // ── Fullscreen active workout view — portaled to body to escape stacking context ──
   const activeWorkout = isActive && portalTarget ? createPortal(
-    <div className="fixed inset-0 z-[9999] bg-black">
+    <div
+      data-workout-overlay
+      className="fixed inset-0 bg-black"
+      style={{ zIndex: 99999 }}
+    >
       {/* Camera fills entire screen */}
       <CameraView
         isActive={isActive}
@@ -264,7 +285,10 @@ export default function WorkoutPage() {
       />
 
       {/* Overlaid HUD — top-left: reps + time + form */}
-      <div className="absolute top-4 left-4 z-[10000] flex flex-col gap-2" style={{ top: "env(safe-area-inset-top, 16px)" }}>
+      <div
+        className="absolute left-4 flex flex-col gap-2"
+        style={{ zIndex: 100000, top: "max(env(safe-area-inset-top, 0px), 16px)", paddingTop: "4px" }}
+      >
         <div className="bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
           <span className="text-white text-4xl font-black tabular-nums drop-text-glow">
             {exerciseState.count}
@@ -286,7 +310,10 @@ export default function WorkoutPage() {
       </div>
 
       {/* End button — top-right */}
-      <div className="absolute top-4 right-4 z-[10000]" style={{ top: "env(safe-area-inset-top, 16px)" }}>
+      <div
+        className="absolute right-4"
+        style={{ zIndex: 100000, top: "max(env(safe-area-inset-top, 0px), 16px)", paddingTop: "4px" }}
+      >
         <button
           onClick={handleStop}
           className="px-5 py-2.5 bg-neutral-900/80 backdrop-blur-sm text-white text-sm font-bold rounded-xl border border-white/10 hover:bg-neutral-800 transition uppercase tracking-wider"
@@ -297,7 +324,7 @@ export default function WorkoutPage() {
 
       {/* Milestone flash overlay */}
       {milestoneFlash && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[10001]">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 100001 }}>
           <div className="px-8 py-4 bg-drop-600/90 backdrop-blur-sm rounded-2xl animate-milestone-flash">
             <p className="text-white text-3xl font-black tracking-tight">
               {milestoneFlash}

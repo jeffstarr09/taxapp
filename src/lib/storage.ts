@@ -72,21 +72,29 @@ export async function getWorkouts(
   const { data } = await query;
   if (!data) return [];
 
-  return data.map((row) => ({
-    id: row.id,
-    userId: row.user_id,
+  return data.map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    userId: row.user_id as string,
     exerciseType: (row.exercise_type as ExerciseType) ?? "pushup",
-    count: row.count,
-    duration: row.duration,
-    averageFormScore: row.average_form_score,
-    timestamps: row.timestamps ?? [],
-    date: row.date,
-    verified: row.verified,
+    count: row.count as number,
+    duration: row.duration as number,
+    averageFormScore: row.average_form_score as number,
+    timestamps: (row.timestamps as number[]) ?? [],
+    date: row.date as string,
+    verified: row.verified as boolean,
   }));
 }
 
 export async function saveWorkout(workout: WorkoutSession): Promise<void> {
-  const { error } = await getSupabase().from("workouts").insert({
+  const supabase = getSupabase();
+
+  // Verify we have an authenticated session before attempting insert
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Not authenticated — sign in to save workouts");
+  }
+
+  const { error } = await supabase.from("workouts").insert({
     id: workout.id,
     user_id: workout.userId,
     exercise_type: workout.exerciseType,
@@ -98,6 +106,7 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
     verified: workout.verified,
   });
   if (error) {
+    console.error("Failed to save workout:", error);
     throw new Error(error.message);
   }
 }
@@ -122,16 +131,16 @@ export async function getLeaderboard(
   if (!data) return [];
 
   let entries: LeaderboardEntry[] = data
-    .filter((row) => row.total_reps > 0)
-    .map((row) => ({
-      userId: row.user_id,
-      username: row.username,
-      displayName: row.display_name,
-      avatarColor: row.avatar_color,
-      totalReps: row.total_reps,
-      bestSession: row.best_session,
-      averageForm: row.average_form,
-      workoutCount: row.workout_count,
+    .filter((row: Record<string, unknown>) => (row.total_reps as number) > 0)
+    .map((row: Record<string, unknown>) => ({
+      userId: row.user_id as string,
+      username: row.username as string,
+      displayName: row.display_name as string,
+      avatarColor: row.avatar_color as string,
+      totalReps: row.total_reps as number,
+      bestSession: row.best_session as number,
+      averageForm: row.average_form as number,
+      workoutCount: row.workout_count as number,
       streak: 0, // computed client-side for now
     }));
 
@@ -151,7 +160,7 @@ export async function getFriendIds(userId: string): Promise<string[]> {
     .from("friendships")
     .select("friend_id")
     .eq("user_id", userId);
-  return data?.map((r) => r.friend_id) ?? [];
+  return data?.map((r: { friend_id: string }) => r.friend_id) ?? [];
 }
 
 export async function getFriends(userId: string): Promise<User[]> {

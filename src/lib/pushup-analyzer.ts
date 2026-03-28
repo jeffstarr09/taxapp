@@ -35,6 +35,9 @@ interface AnalyzerState {
   currentRepElbowMax: number;
   // Active thresholds
   thresholds: Thresholds;
+  // Position readiness — must be in valid pushup pose before counting
+  readyFrames: number;
+  isReady: boolean;
 }
 
 let state: AnalyzerState = createFreshState();
@@ -57,6 +60,8 @@ function createFreshState(userId?: string): AnalyzerState {
     currentRepElbowMin: 180,
     currentRepElbowMax: 0,
     thresholds: getActiveThresholds(userId),
+    readyFrames: 0,
+    isReady: false,
   };
 }
 
@@ -125,6 +130,55 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
 
   state.consecutiveBadFrames = 0;
   state.framesSinceLastRep++;
+
+  // Check if user is in a valid pushup position before allowing rep counting.
+  // Require: at least one ankle visible + body in a plank-like alignment.
+  // This prevents counting random arm movements as pushups.
+  const hasAnkle = (leftAnkle && leftAnkle.score > t.confidenceThreshold) ||
+    (rightAnkle && rightAnkle.score > t.confidenceThreshold);
+  const hasFullBody = hasAnkle && (leftConfidence || rightConfidence);
+
+  if (!state.isReady) {
+    if (hasFullBody) {
+      state.readyFrames++;
+      // Need 20 consecutive frames (~0.7s) of full body visible to be "ready"
+      if (state.readyFrames >= 20) {
+        state.isReady = true;
+      }
+    } else {
+      state.readyFrames = Math.max(0, state.readyFrames - 2);
+    }
+
+    if (!state.isReady) {
+      recordFrame({
+        hasPose: true,
+        confidence: 0,
+        elbowAngle: state.lastElbowAngle,
+        shoulderY: 0,
+        bodyAlignment: state.lastBodyAlignment,
+      });
+      return {
+        phase: state.phase,
+        count: state.count,
+        formScore: 0,
+        feedback: hasAnkle
+          ? "Getting ready... hold your position"
+          : "Position yourself so your full body is visible",
+        elbowAngle: state.lastElbowAngle,
+        bodyAlignment: state.lastBodyAlignment,
+      };
+    }
+  }
+
+  // If we lose full body tracking for too long, reset readiness
+  if (!hasFullBody) {
+    state.readyFrames = Math.max(0, state.readyFrames - 1);
+    if (state.readyFrames <= 0) {
+      state.isReady = false;
+    }
+  } else {
+    state.readyFrames = Math.min(30, state.readyFrames + 1);
+  }
 
   // Use the side with higher total confidence
   const leftScore =
