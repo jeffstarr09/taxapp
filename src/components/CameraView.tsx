@@ -3,12 +3,13 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { detectPose, initPoseDetector } from "@/lib/pose-detection";
 import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
-import { PoseKeypoint, PushupState } from "@/types";
+import { PoseKeypoint, ExerciseState } from "@/types";
 
 interface CameraViewProps {
   isActive: boolean;
-  onUpdate: (state: PushupState) => void;
+  onUpdate: (state: ExerciseState) => void;
   onSessionEnd: (count: number, duration: number, avgForm: number, timestamps: number[]) => void;
+  fullscreen?: boolean;
 }
 
 const SKELETON_CONNECTIONS: [string, string][] = [
@@ -119,7 +120,7 @@ function drawPositionGuide(ctx: CanvasRenderingContext2D, w: number, h: number) 
   ctx.restore();
 }
 
-export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraViewProps) {
+export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscreen }: CameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const guideCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -261,7 +262,7 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
       setError(
         err instanceof Error
           ? err.message.includes("Permission")
-            ? "Camera access denied. Allow camera access to track push-ups."
+            ? "Camera access denied. Allow camera access to track your workout."
             : `Camera error: ${err.message}`
           : "Failed to access camera"
       );
@@ -329,7 +330,7 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
   }
 
   return (
-    <div className="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-white/5">
+    <div className={`relative bg-black overflow-hidden ${fullscreen ? "w-full h-full" : "w-full aspect-[4/3] rounded-2xl border border-white/5"}`}>
       {loading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/90">
           <div className="w-12 h-12 border-3 border-drop-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -360,8 +361,8 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd }: CameraV
           }}
         />
       )}
-      {/* Rep counter overlay — always visible top-left corner */}
-      {!loading && (
+      {/* Rep counter overlay — only shown in non-fullscreen mode (fullscreen has its own HUD) */}
+      {!loading && !fullscreen && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
           <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
             <span className="text-white text-3xl font-black tabular-nums drop-text-glow">

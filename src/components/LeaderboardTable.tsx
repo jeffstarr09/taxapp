@@ -62,7 +62,7 @@ export default function LeaderboardTable({ entries, currentUserId }: Leaderboard
 
             {/* Total reps */}
             <div className="text-right flex-shrink-0">
-              <p className="text-white font-bold text-lg tabular-nums">{entry.totalPushups.toLocaleString()}</p>
+              <p className="text-white font-bold text-lg tabular-nums">{entry.totalReps.toLocaleString()}</p>
               <p className="text-neutral-600 text-[10px] uppercase tracking-wider">reps</p>
             </div>
 

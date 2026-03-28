@@ -1,4 +1,4 @@
-import { User, WorkoutSession, LeaderboardEntry } from "@/types";
+import { User, WorkoutSession, LeaderboardEntry, ExerciseType } from "@/types";
 import { createClient } from "@/lib/supabase";
 
 function getSupabase() {
@@ -53,7 +53,10 @@ function dbProfileToUser(row: {
 
 // ── Workout operations ─────────────────────────────────────────
 
-export async function getWorkouts(userId?: string): Promise<WorkoutSession[]> {
+export async function getWorkouts(
+  userId?: string,
+  exerciseType?: ExerciseType
+): Promise<WorkoutSession[]> {
   let query = getSupabase()
     .from("workouts")
     .select("*")
@@ -62,6 +65,9 @@ export async function getWorkouts(userId?: string): Promise<WorkoutSession[]> {
   if (userId) {
     query = query.eq("user_id", userId);
   }
+  if (exerciseType) {
+    query = query.eq("exercise_type", exerciseType);
+  }
 
   const { data } = await query;
   if (!data) return [];
@@ -69,6 +75,7 @@ export async function getWorkouts(userId?: string): Promise<WorkoutSession[]> {
   return data.map((row) => ({
     id: row.id,
     userId: row.user_id,
+    exerciseType: (row.exercise_type as ExerciseType) ?? "pushup",
     count: row.count,
     duration: row.duration,
     averageFormScore: row.average_form_score,
@@ -82,6 +89,7 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
   await getSupabase().from("workouts").insert({
     id: workout.id,
     user_id: workout.userId,
+    exercise_type: workout.exerciseType,
     count: workout.count,
     duration: workout.duration,
     average_form_score: workout.averageFormScore,
@@ -95,27 +103,34 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
 
 export async function getLeaderboard(
   friendsOnly: boolean = false,
-  currentUserId?: string
+  currentUserId?: string,
+  exerciseType?: ExerciseType
 ): Promise<LeaderboardEntry[]> {
-  // Use the database view for global leaderboard
-  const { data } = await getSupabase()
+  let query = getSupabase()
     .from("leaderboard")
     .select("*")
-    .order("total_pushups", { ascending: false });
+    .order("total_reps", { ascending: false });
 
+  if (exerciseType) {
+    query = query.eq("exercise_type", exerciseType);
+  }
+
+  const { data } = await query;
   if (!data) return [];
 
-  let entries: LeaderboardEntry[] = data.map((row) => ({
-    userId: row.user_id,
-    username: row.username,
-    displayName: row.display_name,
-    avatarColor: row.avatar_color,
-    totalPushups: row.total_pushups,
-    bestSession: row.best_session,
-    averageForm: row.average_form,
-    workoutCount: row.workout_count,
-    streak: 0, // computed client-side for now
-  }));
+  let entries: LeaderboardEntry[] = data
+    .filter((row) => row.total_reps > 0)
+    .map((row) => ({
+      userId: row.user_id,
+      username: row.username,
+      displayName: row.display_name,
+      avatarColor: row.avatar_color,
+      totalReps: row.total_reps,
+      bestSession: row.best_session,
+      averageForm: row.average_form,
+      workoutCount: row.workout_count,
+      streak: 0, // computed client-side for now
+    }));
 
   if (friendsOnly && currentUserId) {
     const friendIds = await getFriendIds(currentUserId);
@@ -160,7 +175,7 @@ export async function addFriend(userId: string, friendId: string): Promise<void>
 export function getCurrentUser(): User | null {
   if (typeof window === "undefined") return null;
   try {
-    const item = localStorage.getItem("pushup_current_user");
+    const item = localStorage.getItem("drop_current_user");
     return item ? JSON.parse(item) : null;
   } catch {
     return null;
@@ -170,7 +185,7 @@ export function getCurrentUser(): User | null {
 /** @deprecated Use useAuth() hook instead */
 export function setCurrentUser(user: User): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem("pushup_current_user", JSON.stringify(user));
+  localStorage.setItem("drop_current_user", JSON.stringify(user));
 }
 
 // ── Seed demo data (no-op when Supabase is connected) ──────────

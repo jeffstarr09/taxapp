@@ -14,6 +14,7 @@ create table public.profiles (
 create table public.workouts (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles on delete cascade not null,
+  exercise_type text not null default 'pushup',
   count integer not null,
   duration integer not null, -- seconds
   average_form_score integer not null default 0,
@@ -34,6 +35,7 @@ create table public.friendships (
 -- Indexes for performance
 create index workouts_user_id_idx on public.workouts (user_id);
 create index workouts_date_idx on public.workouts (date desc);
+create index workouts_exercise_type_idx on public.workouts (exercise_type);
 create index friendships_user_id_idx on public.friendships (user_id);
 create index friendships_friend_id_idx on public.friendships (friend_id);
 
@@ -121,18 +123,19 @@ create policy "Anyone can insert analytics events"
 create policy "Users can read own analytics"
   on public.analytics_events for select using (auth.uid() = user_id);
 
--- Leaderboard view for fast queries
+-- Leaderboard view for fast queries (supports exercise_type filtering via app layer)
 create or replace view public.leaderboard as
 select
   p.id as user_id,
   p.username,
   p.display_name,
   p.avatar_color,
-  coalesce(sum(w.count), 0)::integer as total_pushups,
+  w.exercise_type,
+  coalesce(sum(w.count), 0)::integer as total_reps,
   coalesce(max(w.count), 0)::integer as best_session,
   coalesce(avg(w.average_form_score), 0)::integer as average_form,
   count(w.id)::integer as workout_count
 from public.profiles p
 left join public.workouts w on w.user_id = p.id
-group by p.id, p.username, p.display_name, p.avatar_color
-order by total_pushups desc;
+group by p.id, p.username, p.display_name, p.avatar_color, w.exercise_type
+order by total_reps desc;

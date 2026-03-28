@@ -217,17 +217,20 @@ export default function AdminDashboard() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 12);
 
-  // Most active users
-  const userWorkoutCounts = new Map<string, number>();
+  // Most active users (by reps and workouts)
+  const userStats = new Map<string, { workouts: number; reps: number }>();
   for (const w of workouts) {
-    userWorkoutCounts.set(w.user_id, (userWorkoutCounts.get(w.user_id) ?? 0) + 1);
+    const existing = userStats.get(w.user_id) ?? { workouts: 0, reps: 0 };
+    existing.workouts += 1;
+    existing.reps += w.count;
+    userStats.set(w.user_id, existing);
   }
-  const topUserIds = Array.from(userWorkoutCounts.entries())
-    .sort((a, b) => b[1] - a[1])
+  const topUserIds = Array.from(userStats.entries())
+    .sort((a, b) => b[1].reps - a[1].reps)
     .slice(0, 10);
-  const topUsers = topUserIds.map(([id, count]) => {
+  const topUsers = topUserIds.map(([id, stats]) => {
     const p = profiles.find((p) => p.id === id);
-    return { username: p?.display_name ?? id.slice(0, 8), count };
+    return { username: p?.display_name ?? id.slice(0, 8), workouts: stats.workouts, reps: stats.reps };
   });
 
   // Device breakdown from screen width
@@ -396,7 +399,7 @@ export default function AdminDashboard() {
                 {topUsers.map((u, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <span className="text-white text-sm truncate">{u.username}</span>
-                    <span className="text-neutral-400 text-sm font-bold ml-2">{u.count} workouts</span>
+                    <span className="text-neutral-400 text-sm font-bold ml-2">{u.reps} reps · {u.workouts} workouts</span>
                   </div>
                 ))}
                 {topUsers.length === 0 && <p className="text-neutral-600 text-xs">No data yet</p>}

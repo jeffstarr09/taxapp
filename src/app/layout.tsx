@@ -12,42 +12,44 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "DROP — AI Push-up Counter",
+  title: "DROP — AI Workout Counter",
   description:
-    "Drop. Push. Prove. AI-verified push-ups with real-time form tracking. Challenge your friends and climb the leaderboard.",
+    "Drop. Push. Prove. AI-verified workouts with real-time form tracking. Challenge your friends and climb the leaderboard.",
   keywords: [
     "push-up counter",
     "pushup tracker",
     "AI fitness",
     "workout tracker",
-    "push-up form checker",
+    "exercise form checker",
     "exercise counter",
     "fitness app",
     "bodyweight workout",
+    "pull-up counter",
+    "squat tracker",
   ],
   authors: [{ name: "DROP" }],
   creator: "DROP",
   manifest: "/manifest.json",
   openGraph: {
     type: "website",
-    title: "DROP — AI Push-up Counter",
+    title: "DROP — AI Workout Counter",
     description:
-      "AI-powered push-up counter that verifies every rep. Real-time form tracking, leaderboards, and challenges.",
+      "AI-powered workout counter that verifies every rep. Real-time form tracking, leaderboards, and challenges.",
     siteName: "DROP",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "DROP — AI Push-up Counter",
+        alt: "DROP — AI Workout Counter",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "DROP — AI Push-up Counter",
+    title: "DROP — AI Workout Counter",
     description:
-      "AI-powered push-up counter that verifies every rep. Real-time form tracking, leaderboards, and challenges.",
+      "AI-powered workout counter that verifies every rep. Real-time form tracking, leaderboards, and challenges.",
     images: ["/og-image.png"],
   },
   appleWebApp: {

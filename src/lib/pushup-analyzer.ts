@@ -1,4 +1,4 @@
-import { PoseKeypoint, PushupState } from "@/types";
+import { PoseKeypoint, ExerciseState } from "@/types";
 import { getKeypointByName, calculateAngle } from "./pose-detection";
 import { getActiveThresholds } from "./calibration";
 import { recordFrame, recordRep } from "./telemetry";
@@ -82,7 +82,7 @@ function pushToBuffer(buffer: number[], value: number, maxLen: number): void {
   if (buffer.length > maxLen) buffer.shift();
 }
 
-export function analyzePushup(keypoints: PoseKeypoint[]): PushupState {
+export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
   const t = state.thresholds;
 
   const leftShoulder = getKeypointByName(keypoints, "left_shoulder");

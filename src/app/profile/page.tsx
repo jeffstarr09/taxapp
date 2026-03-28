@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getWorkouts, updateProfile, getFriends } from "@/lib/storage";
+import { getWorkouts, updateProfile, getFriends, getLeaderboard } from "@/lib/storage";
 import { getUnlockedAchievements, ACHIEVEMENTS, getTierColor, getTierTextColor } from "@/lib/achievements";
-import { User, WorkoutSession } from "@/types";
+import { User, WorkoutSession, LeaderboardEntry } from "@/types";
+import { getExerciseConfig } from "@/lib/exercise-config";
 
 const AVATAR_COLORS = [
   "#dc2626", "#ef4444", "#f97316", "#eab308", "#22c55e",
@@ -21,6 +22,8 @@ export default function ProfilePage() {
   const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
   const [friends, setFriends] = useState<User[]>([]);
+  const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
+  const [leaderboardTotal, setLeaderboardTotal] = useState(0);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -33,12 +36,18 @@ export default function ProfilePage() {
     setSelectedColor(profile.avatar_color);
 
     const loadData = async () => {
-      const [w, f] = await Promise.all([
+      const [w, f, lb] = await Promise.all([
         getWorkouts(profile.id),
         getFriends(profile.id),
+        getLeaderboard(false, profile.id, "pushup"),
       ]);
       setWorkouts(w);
       setFriends(f);
+
+      // Find user's rank on the leaderboard
+      const rankIndex = lb.findIndex((e) => e.userId === profile.id);
+      setLeaderboardRank(rankIndex >= 0 ? rankIndex + 1 : null);
+      setLeaderboardTotal(lb.length);
     };
     loadData();
   }, [authLoading, profile]);
@@ -105,7 +114,7 @@ export default function ProfilePage() {
     );
   }
 
-  const totalPushups = workouts.reduce((sum, w) => sum + w.count, 0);
+  const totalReps = workouts.reduce((sum, w) => sum + w.count, 0);
   const avgForm =
     workouts.length > 0
       ? Math.round(workouts.reduce((sum, w) => sum + w.averageFormScore, 0) / workouts.length)
@@ -194,7 +203,7 @@ export default function ProfilePage() {
       <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Stats</h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
         <div className="drop-card rounded-xl p-4 text-center">
-          <p className="text-2xl font-black text-white">{totalPushups.toLocaleString()}</p>
+          <p className="text-2xl font-black text-white">{totalReps.toLocaleString()}</p>
           <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Total Reps</p>
         </div>
         <div className="drop-card rounded-xl p-4 text-center">
@@ -211,6 +220,41 @@ export default function ProfilePage() {
           <p className="text-2xl font-black text-white">{avgForm}%</p>
           <p className="text-neutral-600 text-[10px] uppercase tracking-wider mt-1">Avg Form</p>
         </div>
+      </div>
+
+      {/* Ranks */}
+      <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Ranks</h2>
+      <div className="drop-card rounded-xl p-5 mb-8">
+        {totalReps > 0 ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white font-bold text-lg">
+                {totalReps.toLocaleString()} pushups
+              </p>
+              {leaderboardRank !== null && (
+                <p className="text-neutral-500 text-sm mt-0.5">
+                  Ranked <span className="text-drop-400 font-semibold">#{leaderboardRank}</span> of {leaderboardTotal} on the leaderboard
+                </p>
+              )}
+            </div>
+            <Link
+              href="/leaderboard"
+              className="px-4 py-2 bg-drop-600/15 text-drop-400 rounded-lg text-sm font-semibold hover:bg-drop-600/25 transition"
+            >
+              View Leaderboard
+            </Link>
+          </div>
+        ) : (
+          <div className="text-center py-2">
+            <p className="text-neutral-500 text-sm">Complete your first workout to get ranked!</p>
+            <Link
+              href="/workout"
+              className="inline-block mt-3 px-6 py-2 bg-drop-600 text-white rounded-lg text-sm font-semibold hover:bg-drop-700 transition"
+            >
+              Start Workout
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Achievements */}
@@ -248,21 +292,24 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* Recent workouts */}
+      {/* Workout History */}
       {workouts.length > 0 && (
         <>
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">Recent</h2>
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-4">
+            Workout History ({workouts.length})
+          </h2>
           <div className="space-y-1.5 mb-8">
             {workouts
               .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .slice(0, 10)
               .map((workout) => (
                 <div
                   key={workout.id}
                   className="flex items-center justify-between p-3.5 drop-card rounded-xl"
                 >
                   <div>
-                    <p className="text-white font-bold text-sm">{workout.count} reps</p>
+                    <p className="text-white font-bold text-sm">
+                      {workout.count} {getExerciseConfig(workout.exerciseType ?? "pushup").labelPlural.toLowerCase()}
+                    </p>
                     <p className="text-neutral-600 text-xs">
                       {new Date(workout.date).toLocaleDateString("en-US", {
                         month: "short",

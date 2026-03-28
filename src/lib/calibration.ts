@@ -29,7 +29,7 @@ export interface CalibrationFrame {
   timestamp: number;
 }
 
-const CALIBRATION_KEY = "pushup_calibration";
+const CALIBRATION_KEY = "drop_calibration";
 const DEFAULT_PROFILE: Omit<CalibrationProfile, "id" | "userId" | "calibratedAt" | "testRepCount" | "rawElbowMins" | "rawElbowMaxes" | "rawShoulderDrops"> = {
   elbowDownAngle: 110,
   elbowUpAngle: 150,

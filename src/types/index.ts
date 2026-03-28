@@ -1,3 +1,5 @@
+export type ExerciseType = "pushup" | "pullup" | "squat" | "situp";
+
 export interface User {
   id: string;
   username: string;
@@ -10,6 +12,7 @@ export interface User {
 export interface WorkoutSession {
   id: string;
   userId: string;
+  exerciseType: ExerciseType;
   count: number;
   duration: number; // seconds
   averageFormScore: number; // 0-100
@@ -23,7 +26,7 @@ export interface LeaderboardEntry {
   username: string;
   displayName: string;
   avatarColor: string;
-  totalPushups: number;
+  totalReps: number;
   bestSession: number;
   averageForm: number;
   workoutCount: number;
@@ -37,7 +40,7 @@ export interface PoseKeypoint {
   name: string;
 }
 
-export interface PushupState {
+export interface ExerciseState {
   phase: "up" | "down" | "transition";
   count: number;
   formScore: number;
@@ -45,6 +48,9 @@ export interface PushupState {
   elbowAngle: number;
   bodyAlignment: number;
 }
+
+/** @deprecated Use ExerciseState instead */
+export type PushupState = ExerciseState;
 
 export interface FriendRequest {
   id: string;

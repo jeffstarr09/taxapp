@@ -1,9 +1,9 @@
 "use client";
 
-import { PushupState } from "@/types";
+import { ExerciseState } from "@/types";
 
 interface WorkoutHUDProps {
-  state: PushupState;
+  state: ExerciseState;
   elapsed: number;
   isActive: boolean;
 }
