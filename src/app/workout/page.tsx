@@ -52,6 +52,7 @@ export default function WorkoutPage() {
   } | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [milestoneFlash, setMilestoneFlash] = useState<string | null>(null);
   const [telemetrySessionId, setTelemetrySessionId] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -118,6 +119,44 @@ export default function WorkoutPage() {
     []
   );
 
+  // Auto-save workout when session result is available
+  useEffect(() => {
+    if (!sessionResult || saved || saving) return;
+
+    const autoSave = async () => {
+      setSaving(true);
+      setSaveError(false);
+      const workout: WorkoutSession = {
+        id: uuidv4(),
+        userId: profile?.id || "anonymous",
+        exerciseType,
+        count: sessionResult.count,
+        duration: sessionResult.duration,
+        averageFormScore: sessionResult.avgForm,
+        timestamps: sessionResult.timestamps,
+        date: new Date().toISOString(),
+        verified: true,
+      };
+      try {
+        await saveWorkout(workout);
+        setSaved(true);
+        trackEvent("workout_saved", {
+          exerciseType,
+          repCount: workout.count,
+          duration: workout.duration,
+          formScore: workout.averageFormScore,
+        });
+      } catch {
+        setSaveError(true);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    autoSave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionResult]);
+
   const handleStart = () => {
     prevCountRef.current = 0;
     setExerciseState({
@@ -161,8 +200,9 @@ export default function WorkoutPage() {
     });
   };
 
-  const handleSave = async () => {
-    if (!sessionResult || saved) return;
+  const handleRetrySave = async () => {
+    if (!sessionResult || saved || saving) return;
+    setSaving(true);
     setSaveError(false);
     const workout: WorkoutSession = {
       id: uuidv4(),
@@ -186,6 +226,8 @@ export default function WorkoutPage() {
       });
     } catch {
       setSaveError(true);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -211,78 +253,82 @@ export default function WorkoutPage() {
   const formLabel = getFormLabel(exerciseState.formScore);
 
   // ── Fullscreen active workout view — portaled to body to escape stacking context ──
-  if (isActive && portalTarget) {
-    return createPortal(
-      <>
-        <div className="fixed inset-0 z-[9999] bg-black">
-          {/* Camera fills entire screen */}
-          <CameraView
-            isActive={isActive}
-            onUpdate={handleUpdate}
-            onSessionEnd={handleSessionEnd}
-            fullscreen
-          />
+  const activeWorkout = isActive && portalTarget ? createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black">
+      {/* Camera fills entire screen */}
+      <CameraView
+        isActive={isActive}
+        onUpdate={handleUpdate}
+        onSessionEnd={handleSessionEnd}
+        fullscreen
+      />
 
-          {/* Overlaid HUD — top-left: reps + time + form */}
-          <div className="absolute top-4 left-4 z-[10000] flex flex-col gap-2" style={{ top: "env(safe-area-inset-top, 16px)" }}>
-            <div className="bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-              <span className="text-white text-4xl font-black tabular-nums drop-text-glow">
-                {exerciseState.count}
+      {/* Overlaid HUD — top-left: reps + time + form */}
+      <div className="absolute top-4 left-4 z-[10000] flex flex-col gap-2" style={{ top: "env(safe-area-inset-top, 16px)" }}>
+        <div className="bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+          <span className="text-white text-4xl font-black tabular-nums drop-text-glow">
+            {exerciseState.count}
+          </span>
+          <span className="text-neutral-400 text-xs ml-1.5 uppercase tracking-wider">reps</span>
+        </div>
+        <div className="flex gap-2">
+          <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10">
+            <span className="text-white text-sm font-bold tabular-nums">{formatTime(elapsed)}</span>
+          </div>
+          {exerciseState.formScore > 0 && (
+            <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10">
+              <span className={`text-sm font-bold ${formLabel.color}`}>
+                {formLabel.text}
               </span>
-              <span className="text-neutral-400 text-xs ml-1.5 uppercase tracking-wider">reps</span>
-            </div>
-            <div className="flex gap-2">
-              <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10">
-                <span className="text-white text-sm font-bold tabular-nums">{formatTime(elapsed)}</span>
-              </div>
-              {exerciseState.formScore > 0 && (
-                <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10">
-                  <span className={`text-sm font-bold ${formLabel.color}`}>
-                    {formLabel.text}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* End button — top-right */}
-          <div className="absolute top-4 right-4 z-[10000]" style={{ top: "env(safe-area-inset-top, 16px)" }}>
-            <button
-              onClick={handleStop}
-              className="px-5 py-2.5 bg-neutral-900/80 backdrop-blur-sm text-white text-sm font-bold rounded-xl border border-white/10 hover:bg-neutral-800 transition uppercase tracking-wider"
-            >
-              End
-            </button>
-          </div>
-
-          {/* Milestone flash overlay */}
-          {milestoneFlash && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[10001]">
-              <div className="px-8 py-4 bg-drop-600/90 backdrop-blur-sm rounded-2xl animate-milestone-flash">
-                <p className="text-white text-3xl font-black tracking-tight">
-                  {milestoneFlash}
-                </p>
-              </div>
             </div>
           )}
         </div>
+      </div>
 
-        {showSummary && sessionResult && (
-          <WorkoutSummary
-            count={sessionResult.count}
-            duration={sessionResult.duration}
-            averageForm={sessionResult.avgForm}
-            exerciseType={exerciseType}
-            onClose={handleCloseSummary}
-            onSave={handleSave}
-            saved={saved}
-            saveError={saveError}
-            onFeedback={handleFeedback}
-          />
-        )}
-      </>,
-      portalTarget
-    );
+      {/* End button — top-right */}
+      <div className="absolute top-4 right-4 z-[10000]" style={{ top: "env(safe-area-inset-top, 16px)" }}>
+        <button
+          onClick={handleStop}
+          className="px-5 py-2.5 bg-neutral-900/80 backdrop-blur-sm text-white text-sm font-bold rounded-xl border border-white/10 hover:bg-neutral-800 transition uppercase tracking-wider"
+        >
+          End
+        </button>
+      </div>
+
+      {/* Milestone flash overlay */}
+      {milestoneFlash && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[10001]">
+          <div className="px-8 py-4 bg-drop-600/90 backdrop-blur-sm rounded-2xl animate-milestone-flash">
+            <p className="text-white text-3xl font-black tracking-tight">
+              {milestoneFlash}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>,
+    portalTarget
+  ) : null;
+
+  // WorkoutSummary — also portaled to body so it appears above everything
+  const summaryPortal = showSummary && sessionResult && portalTarget ? createPortal(
+    <WorkoutSummary
+      count={sessionResult.count}
+      duration={sessionResult.duration}
+      averageForm={sessionResult.avgForm}
+      exerciseType={exerciseType}
+      onClose={handleCloseSummary}
+      saved={saved}
+      saving={saving}
+      saveError={saveError}
+      onRetrySave={handleRetrySave}
+      onFeedback={handleFeedback}
+    />,
+    portalTarget
+  ) : null;
+
+  // If workout is active, just render the portals (no page content visible)
+  if (isActive) {
+    return <>{activeWorkout}{summaryPortal}</>;
   }
 
   // ── Pre-workout setup view ──
@@ -415,18 +461,7 @@ export default function WorkoutPage() {
         </div>
       </div>
 
-      {showSummary && sessionResult && (
-        <WorkoutSummary
-          count={sessionResult.count}
-          duration={sessionResult.duration}
-          averageForm={sessionResult.avgForm}
-          exerciseType={exerciseType}
-          onClose={handleCloseSummary}
-          onSave={handleSave}
-          saved={saved}
-          onFeedback={handleFeedback}
-        />
-      )}
+      {summaryPortal}
 
       {showTutorial && (
         <Tutorial onComplete={() => setShowTutorial(false)} />
