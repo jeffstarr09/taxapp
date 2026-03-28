@@ -35,7 +35,7 @@ export function trackEvent(
   const supabase = createClient();
 
   // Get current user ID if logged in (don't await)
-  supabase.auth.getUser().then(({ data }) => {
+  supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
     const userId = data?.user?.id ?? null;
 
     supabase
