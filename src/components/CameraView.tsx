@@ -240,11 +240,21 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "user",
+          facingMode: { exact: "user" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
         audio: false,
+      }).catch(() => {
+        // Fallback if exact "user" fails (some devices don't support it)
+        return navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
       });
 
       streamRef.current = stream;
