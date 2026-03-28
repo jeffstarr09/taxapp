@@ -13,6 +13,7 @@ interface WorkoutSummaryProps {
   onClose: () => void;
   onSave: () => void;
   saved: boolean;
+  saveError?: boolean;
   onFeedback?: (feedback: {
     rating: "accurate" | "overcounted" | "undercounted";
   }) => void;
@@ -37,7 +38,7 @@ function getShareText(count: number, grade: string, exerciseLabel: string): stri
   return `I just dropped ${count} ${exerciseLabel.toLowerCase()} and scored ${grade} form on DROP — the AI workout counter. Think you can beat that?`;
 }
 
-export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, onSave, saved, onFeedback }: WorkoutSummaryProps) {
+export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, onSave, saved, saveError, onFeedback }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const [shared, setShared] = useState(false);
@@ -204,6 +205,13 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
           </button>
         </div>
 
+        {/* Save error */}
+        {saveError && (
+          <div className="mb-3 p-2.5 rounded-xl border border-drop-500/30 bg-drop-500/10 text-center">
+            <p className="text-drop-400 text-xs font-medium">Failed to save. Check your connection and try again.</p>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex gap-2">
           <button
@@ -217,7 +225,7 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
             disabled={saved}
             className="flex-1 px-4 py-3 bg-drop-600 text-white rounded-xl hover:bg-drop-700 transition font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saved ? "Saved" : "Save Result"}
+            {saved ? "Saved" : saveError ? "Retry Save" : "Save Result"}
           </button>
         </div>
       </div>

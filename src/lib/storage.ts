@@ -86,7 +86,7 @@ export async function getWorkouts(
 }
 
 export async function saveWorkout(workout: WorkoutSession): Promise<void> {
-  await getSupabase().from("workouts").insert({
+  const { error } = await getSupabase().from("workouts").insert({
     id: workout.id,
     user_id: workout.userId,
     exercise_type: workout.exerciseType,
@@ -97,6 +97,9 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
     date: workout.date,
     verified: workout.verified,
   });
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 // ── Leaderboard ────────────────────────────────────────────────
