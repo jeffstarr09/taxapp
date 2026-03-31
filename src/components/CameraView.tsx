@@ -38,8 +38,26 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(true);
   const [poseDetected, setPoseDetected] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
   const [displayCount, setDisplayCount] = useState(0);
   const poseDetectedFrames = useRef(0);
+
+  // Track orientation to counter-rotate the guide image
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", () => {
+      // Delay check to let dimensions update after orientation change
+      setTimeout(checkOrientation, 100);
+    });
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
+  }, []);
 
   // Auto-hide guide only when pose is reliably detected
   useEffect(() => {
@@ -253,13 +271,17 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
         className="absolute inset-0 w-full h-full"
         style={{ transform: "scaleX(-1)" }}
       />
-      {/* Position guide overlay — always shown rotated so user sees it upright when phone is sideways */}
+      {/* Position guide overlay — counter-rotates so image always looks the same */}
       {showGuide && !loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 overflow-hidden">
           <img
             src="/pushup-guide.png"
             alt="Align with the guide to start tracking push-ups"
-            style={{ transform: "rotate(90deg)", width: "150%", maxWidth: "none" }}
+            style={
+              isLandscape
+                ? { width: "80%", maxHeight: "90%" }
+                : { transform: "rotate(90deg)", height: "80vw", width: "auto", maxWidth: "none" }
+            }
             className="object-contain"
           />
         </div>
