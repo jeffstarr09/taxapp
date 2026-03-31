@@ -259,18 +259,15 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
       {/* Position guide overlay — rotated 90° so it's upright in landscape */}
       {showGuide && !loading && (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 bg-black/50"
+          className="absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 bg-black/60"
           style={{ opacity: poseDetected ? 0 : 1 }}
         >
           <img
             src="/pushup-guide.png"
-            alt="Get into pushup position"
-            className="max-h-[70%] max-w-[70%] object-contain"
+            alt="Align with the guide to start tracking push-ups"
+            className="max-h-[80%] max-w-[80%] object-contain"
             style={{ transform: "rotate(90deg)" }}
           />
-          <p className="absolute bottom-6 left-0 right-0 text-center text-white text-sm font-medium drop-shadow-lg">
-            Get into position — turn your phone sideways
-          </p>
         </div>
       )}
       {/* Rep counter overlay — only shown in non-fullscreen mode (fullscreen has its own HUD) */}
