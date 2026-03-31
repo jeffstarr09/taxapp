@@ -27,103 +27,9 @@ const SKELETON_CONNECTIONS: [string, string][] = [
   ["right_knee", "right_ankle"],
 ];
 
-/**
- * Draws a side-view pushup silhouette outline on the canvas.
- * Shown briefly when tracking starts so users know where to position.
- */
-function drawPositionGuide(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save();
-
-  // Semi-transparent overlay
-  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-  ctx.fillRect(0, 0, w, h);
-
-  // Pushup silhouette (side view, person in "up" position)
-  // Scaled proportionally to canvas size
-  const scale = Math.min(w / 640, h / 480);
-  const cx = w / 2;
-  const baseY = h * 0.55;
-
-  ctx.strokeStyle = "rgba(220, 38, 38, 0.6)";
-  ctx.lineWidth = 2.5 * scale;
-  ctx.setLineDash([8 * scale, 6 * scale]);
-
-  // Body line from hands -> shoulders -> hips -> ankles (side view plank)
-  const bodyLen = w * 0.6;
-  const startX = cx - bodyLen / 2;
-  const endX = cx + bodyLen / 2;
-
-  // Hands (wrists on ground)
-  const handY = baseY + 30 * scale;
-  // Shoulders (above hands)
-  const shoulderX = startX + bodyLen * 0.2;
-  const shoulderY = baseY - 20 * scale;
-  // Hips
-  const hipX = startX + bodyLen * 0.55;
-  const hipY = baseY - 15 * scale;
-  // Ankles
-  const ankleX = endX;
-  const ankleY = baseY + 5 * scale;
-
-  // Arms (wrist -> elbow -> shoulder)
-  ctx.beginPath();
-  ctx.moveTo(startX, handY);
-  ctx.lineTo(startX + bodyLen * 0.08, baseY - 5 * scale); // elbow
-  ctx.lineTo(shoulderX, shoulderY);
-  ctx.stroke();
-
-  // Torso (shoulder -> hip)
-  ctx.beginPath();
-  ctx.moveTo(shoulderX, shoulderY);
-  ctx.lineTo(hipX, hipY);
-  ctx.stroke();
-
-  // Legs (hip -> knee -> ankle)
-  ctx.beginPath();
-  ctx.moveTo(hipX, hipY);
-  ctx.lineTo(startX + bodyLen * 0.75, baseY);
-  ctx.lineTo(ankleX, ankleY);
-  ctx.stroke();
-
-  // Head circle
-  ctx.beginPath();
-  ctx.arc(shoulderX - 15 * scale, shoulderY - 15 * scale, 12 * scale, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Joint dots
-  ctx.setLineDash([]);
-  ctx.fillStyle = "rgba(220, 38, 38, 0.5)";
-  const joints = [
-    [startX, handY],
-    [startX + bodyLen * 0.08, baseY - 5 * scale],
-    [shoulderX, shoulderY],
-    [hipX, hipY],
-    [startX + bodyLen * 0.75, baseY],
-    [ankleX, ankleY],
-  ];
-  joints.forEach(([jx, jy]) => {
-    ctx.beginPath();
-    ctx.arc(jx, jy, 4 * scale, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // Label
-  ctx.font = `${14 * scale}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.textAlign = "center";
-  ctx.fillText("Align your body like this", cx, h * 0.85);
-
-  ctx.font = `${11 * scale}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-  ctx.fillText("Side view — full body in frame", cx, h * 0.85 + 18 * scale);
-
-  ctx.restore();
-}
-
 export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscreen }: CameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const guideCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -135,17 +41,7 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
   const [displayCount, setDisplayCount] = useState(0);
   const poseDetectedFrames = useRef(0);
 
-  // Draw guide when camera is ready
-  useEffect(() => {
-    if (!loading && showGuide && guideCanvasRef.current && videoRef.current) {
-      const canvas = guideCanvasRef.current;
-      const video = videoRef.current;
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext("2d");
-      if (ctx) drawPositionGuide(ctx, canvas.width, canvas.height);
-    }
-  }, [loading, showGuide]);
+  // No draw-guide effect needed — using static image overlay
 
   // Auto-hide guide after pose is steadily detected
   useEffect(() => {
@@ -360,16 +256,22 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
         className="absolute inset-0 w-full h-full"
         style={{ transform: "scaleX(-1)" }}
       />
-      {/* Position guide overlay */}
+      {/* Position guide overlay — rotated 90° so it's upright in landscape */}
       {showGuide && !loading && (
-        <canvas
-          ref={guideCanvasRef}
-          className="absolute inset-0 w-full h-full z-10 transition-opacity duration-500"
-          style={{
-            transform: "scaleX(-1)",
-            opacity: poseDetected ? 0 : 1,
-          }}
-        />
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 bg-black/50"
+          style={{ opacity: poseDetected ? 0 : 1 }}
+        >
+          <img
+            src="/pushup-guide.png"
+            alt="Get into pushup position"
+            className="max-h-[70%] max-w-[70%] object-contain"
+            style={{ transform: "rotate(90deg)" }}
+          />
+          <p className="absolute bottom-6 left-0 right-0 text-center text-white text-sm font-medium drop-shadow-lg">
+            Get into position — turn your phone sideways
+          </p>
+        </div>
       )}
       {/* Rep counter overlay — only shown in non-fullscreen mode (fullscreen has its own HUD) */}
       {!loading && !fullscreen && (
