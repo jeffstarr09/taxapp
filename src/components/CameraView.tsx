@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from "react";
 import { detectPose, initPoseDetector } from "@/lib/pose-detection";
-import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
+import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps, isAnalyzerReady } from "@/lib/pushup-analyzer";
 import { PoseKeypoint, ExerciseState } from "@/types";
 
 interface CameraViewProps {
@@ -37,10 +37,8 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(true);
-  const [poseDetected, setPoseDetected] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   const [displayCount, setDisplayCount] = useState(0);
-  const poseDetectedFrames = useRef(0);
 
   // Track orientation to counter-rotate the guide image
   useEffect(() => {
@@ -50,7 +48,6 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
     checkOrientation();
     window.addEventListener("resize", checkOrientation);
     window.addEventListener("orientationchange", () => {
-      // Delay check to let dimensions update after orientation change
       setTimeout(checkOrientation, 100);
     });
     return () => {
@@ -58,13 +55,6 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
       window.removeEventListener("orientationchange", checkOrientation);
     };
   }, []);
-
-  // Auto-hide guide only when pose is reliably detected
-  useEffect(() => {
-    if (poseDetected && showGuide) {
-      setShowGuide(false);
-    }
-  }, [poseDetected, showGuide]);
 
   const drawKeypoints = useCallback((keypoints: PoseKeypoint[], canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d");
@@ -107,16 +97,6 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
       }
     });
 
-    // Track if pose is detected reliably (for guide auto-hide)
-    const confidentPoints = keypoints.filter((kp) => kp.score > 0.3).length;
-    if (confidentPoints >= 8) {
-      poseDetectedFrames.current++;
-      if (poseDetectedFrames.current > 15) {
-        setPoseDetected(true);
-      }
-    } else {
-      poseDetectedFrames.current = Math.max(0, poseDetectedFrames.current - 2);
-    }
   }, []);
 
   const detect = useCallback(async () => {
@@ -133,13 +113,17 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
         onUpdate(pushupState);
         lastCountRef.current = pushupState.count;
         setDisplayCount(pushupState.count);
+        // Hide guide only when analyzer confirms full body in position
+        if (showGuide && isAnalyzerReady()) {
+          setShowGuide(false);
+        }
       }
     } catch {
       // Silently continue on detection errors
     }
 
     animFrameRef.current = requestAnimationFrame(detect);
-  }, [isActive, onUpdate, drawKeypoints]);
+  }, [isActive, onUpdate, drawKeypoints, showGuide]);
 
   const startCamera = useCallback(async () => {
     setLoading(true);
