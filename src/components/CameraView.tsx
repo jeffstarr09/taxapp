@@ -279,8 +279,8 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
             alt="Align with the guide to start tracking push-ups"
             style={
               isLandscape
-                ? { width: "80%", height: "auto", maxHeight: "none" }
-                : { transform: "rotate(90deg)", width: "80vh", height: "auto", maxWidth: "none", maxHeight: "none" }
+                ? { width: "100%", height: "auto", flexShrink: 0 }
+                : { transform: "rotate(90deg)", width: "100vh", height: "auto", flexShrink: 0 }
             }
           />
         </div>
