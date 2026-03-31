@@ -341,3 +341,7 @@ export function getAverageFormScore(): number {
     state.formScores.reduce((a, b) => a + b, 0) / state.formScores.length
   );
 }
+
+export function isAnalyzerReady(): boolean {
+  return state.isReady;
+}
