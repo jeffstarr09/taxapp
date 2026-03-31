@@ -38,18 +38,31 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(true);
   const [poseDetected, setPoseDetected] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
   const [displayCount, setDisplayCount] = useState(0);
   const poseDetectedFrames = useRef(0);
 
-  // No draw-guide effect needed — using static image overlay
-
-  // Auto-hide guide after pose is steadily detected
+  // Detect landscape orientation to auto-hide guide
   useEffect(() => {
-    if (poseDetected && showGuide) {
+    const checkOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
+  }, []);
+
+  // Auto-hide guide when landscape is detected or pose is steady
+  useEffect(() => {
+    if ((isLandscape || poseDetected) && showGuide) {
       const timeout = setTimeout(() => setShowGuide(false), 600);
       return () => clearTimeout(timeout);
     }
-  }, [poseDetected, showGuide]);
+  }, [poseDetected, isLandscape, showGuide]);
 
   const drawKeypoints = useCallback((keypoints: PoseKeypoint[], canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d");
@@ -256,17 +269,16 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
         className="absolute inset-0 w-full h-full"
         style={{ transform: "scaleX(-1)" }}
       />
-      {/* Position guide overlay — rotated 90° so it's upright in landscape */}
+      {/* Position guide overlay */}
       {showGuide && !loading && (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 bg-black/60"
-          style={{ opacity: poseDetected ? 0 : 1 }}
+          style={{ opacity: (isLandscape || poseDetected) ? 0 : 1 }}
         >
           <img
             src="/pushup-guide.png"
             alt="Align with the guide to start tracking push-ups"
-            className="max-h-[80%] max-w-[80%] object-contain"
-            style={{ transform: "rotate(90deg)" }}
+            className="w-[80%] h-auto object-contain"
           />
         </div>
       )}
