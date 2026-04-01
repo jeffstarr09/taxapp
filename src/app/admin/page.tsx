@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import { getDebugLog, clearDebugLog } from "@/lib/debug-log";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -460,6 +461,55 @@ export default function AdminDashboard() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+
+          {/* Debug Log */}
+          <div className="drop-card rounded-xl p-4 mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-neutral-500 text-xs uppercase tracking-wider">Debug Log (workout save pipeline)</p>
+              <button
+                onClick={() => { clearDebugLog(); fetchData(); }}
+                className="px-3 py-1 rounded-lg text-xs font-semibold bg-neutral-800 text-neutral-400 hover:bg-neutral-700 transition"
+              >
+                Clear Log
+              </button>
+            </div>
+            <div className="space-y-1 max-h-96 overflow-y-auto font-mono text-xs">
+              {getDebugLog().map((entry, i) => (
+                <div
+                  key={i}
+                  className={`py-1.5 px-2 rounded ${
+                    entry.level === "error"
+                      ? "bg-red-900/30 text-red-400"
+                      : entry.level === "warn"
+                      ? "bg-yellow-900/30 text-yellow-400"
+                      : "bg-neutral-800/50 text-neutral-300"
+                  }`}
+                >
+                  <span className="text-neutral-600 mr-2">
+                    {new Date(entry.time).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
+                  </span>
+                  <span className="font-semibold mr-2">[{entry.level.toUpperCase()}]</span>
+                  <span>{entry.message}</span>
+                  {entry.data !== undefined && entry.data !== null && (
+                    <span className="text-neutral-500 ml-2">
+                      {typeof entry.data === "string" ? entry.data : JSON.stringify(entry.data)}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {getDebugLog().length === 0 && (
+                <p className="text-neutral-600 text-center py-4">
+                  No debug logs yet. Do a workout and logs will appear here.
+                </p>
+              )}
             </div>
           </div>
 
