@@ -129,8 +129,6 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
     setLoading(true);
     setError(null);
     setShowGuide(true);
-    setPoseDetected(false);
-    poseDetectedFrames.current = 0;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
