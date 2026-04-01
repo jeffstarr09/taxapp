@@ -155,7 +155,9 @@ export default function WorkoutPage() {
         verified: true,
       };
       try {
+        console.log("[DROP] Saving workout:", { userId: profile.id, count: workout.count, exerciseType });
         await saveWorkout(workout);
+        console.log("[DROP] Workout saved successfully!");
         setSaved(true);
         trackEvent("workout_saved", {
           exerciseType,
@@ -163,7 +165,8 @@ export default function WorkoutPage() {
           duration: workout.duration,
           formScore: workout.averageFormScore,
         });
-      } catch {
+      } catch (err) {
+        console.error("[DROP] Workout save FAILED:", err);
         setSaveError(true);
       } finally {
         setSaving(false);
