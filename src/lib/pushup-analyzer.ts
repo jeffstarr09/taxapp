@@ -140,13 +140,26 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
 
   if (!state.isReady) {
     if (hasFullBody) {
-      state.readyFrames++;
-      // Need 20 consecutive frames (~0.7s) of full body visible to be "ready"
-      if (state.readyFrames >= 20) {
+      // Also check body looks like a plank — arms roughly extended (elbow angle > 130°)
+      const readySide = leftConfidence ? "left" : "right";
+      const readyShoulder = readySide === "left" ? leftShoulder! : rightShoulder!;
+      const readyElbow = readySide === "left" ? leftElbow! : rightElbow!;
+      const readyWrist = readySide === "left" ? leftWrist! : rightWrist!;
+      const readyElbowAngle = calculateAngle(readyShoulder, readyElbow, readyWrist);
+
+      if (readyElbowAngle > 130) {
+        state.readyFrames++;
+      } else {
+        // Body visible but not in plank — slow decay
+        state.readyFrames = Math.max(0, state.readyFrames - 1);
+      }
+      // Need 45 consecutive frames (~1.5s) of full body in plank position
+      if (state.readyFrames >= 45) {
         state.isReady = true;
       }
     } else {
-      state.readyFrames = Math.max(0, state.readyFrames - 2);
+      // Lost body tracking — fast decay
+      state.readyFrames = Math.max(0, state.readyFrames - 3);
     }
 
     if (!state.isReady) {
