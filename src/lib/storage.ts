@@ -1,5 +1,6 @@
 import { User, WorkoutSession, LeaderboardEntry, ExerciseType } from "@/types";
 import { createClient } from "@/lib/supabase";
+import { debugLog, debugError, debugWarn } from "@/lib/debug-log";
 
 function getSupabase() {
   return createClient();
@@ -90,12 +91,13 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
 
   // Verify we have an authenticated session before attempting insert
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  console.log("[DROP] Auth check:", { userId: user?.id, authError: authError?.message, workoutUserId: workout.userId });
+  debugLog("Auth check", { userId: user?.id, authError: authError?.message, workoutUserId: workout.userId });
   if (!user) {
+    debugError("Not authenticated — no user from auth.getUser()");
     throw new Error("Not authenticated — sign in to save workouts");
   }
   if (user.id !== workout.userId) {
-    console.warn("[DROP] User ID mismatch! auth.uid:", user.id, "workout.userId:", workout.userId);
+    debugWarn("User ID mismatch!", { authUid: user.id, workoutUserId: workout.userId });
   }
 
   const insertData = {
@@ -109,14 +111,14 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
     date: workout.date,
     verified: workout.verified,
   };
-  console.log("[DROP] Inserting workout:", insertData);
+  debugLog("Inserting workout", insertData);
 
   const { error, data } = await supabase.from("workouts").insert(insertData).select();
-  console.log("[DROP] Insert result:", { error, data });
   if (error) {
-    console.error("[DROP] Failed to save workout:", error);
+    debugError("Insert failed", { code: error.code, message: error.message, details: error.details, hint: error.hint });
     throw new Error(error.message);
   }
+  debugLog("Insert succeeded", { returnedRows: data?.length });
 }
 
 // ── Leaderboard ────────────────────────────────────────────────

@@ -20,6 +20,7 @@ import {
 } from "@/lib/sounds";
 import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
 import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
+import { debugLog, debugError } from "@/lib/debug-log";
 import { getCalibrationProfile } from "@/lib/calibration";
 import { trackWorkoutEvent, trackEvent } from "@/lib/analytics";
 import { getExerciseConfig, getAvailableExercises } from "@/lib/exercise-config";
@@ -136,6 +137,7 @@ export default function WorkoutPage() {
     if (!sessionResult || saved || saving) return;
     // Cannot save without a signed-in user — Supabase RLS will reject it
     if (!profile?.id) {
+      debugError("No profile.id — cannot save workout", { profile });
       setSaveError(true);
       return;
     }
@@ -155,9 +157,9 @@ export default function WorkoutPage() {
         verified: true,
       };
       try {
-        console.log("[DROP] Saving workout:", { userId: profile.id, count: workout.count, exerciseType });
+        debugLog("Auto-save starting", { userId: profile.id, count: workout.count, exerciseType });
         await saveWorkout(workout);
-        console.log("[DROP] Workout saved successfully!");
+        debugLog("Workout saved successfully!", { workoutId: workout.id });
         setSaved(true);
         trackEvent("workout_saved", {
           exerciseType,
@@ -166,7 +168,7 @@ export default function WorkoutPage() {
           formScore: workout.averageFormScore,
         });
       } catch (err) {
-        console.error("[DROP] Workout save FAILED:", err);
+        debugError("Workout save FAILED", { error: err instanceof Error ? err.message : String(err) });
         setSaveError(true);
       } finally {
         setSaving(false);
