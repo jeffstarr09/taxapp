@@ -498,9 +498,9 @@ export default function AdminDashboard() {
                   </span>
                   <span className="font-semibold mr-2">[{entry.level.toUpperCase()}]</span>
                   <span>{entry.message}</span>
-                  {entry.data && (
+                  {entry.data !== undefined && entry.data !== null && (
                     <span className="text-neutral-500 ml-2">
-                      {JSON.stringify(entry.data)}
+                      {typeof entry.data === "string" ? entry.data : JSON.stringify(entry.data)}
                     </span>
                   )}
                 </div>
