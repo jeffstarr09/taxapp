@@ -89,14 +89,18 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
   const supabase = getSupabase();
 
   // Verify we have an authenticated session before attempting insert
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  console.log("[DROP] Auth check:", { userId: user?.id, authError: authError?.message, workoutUserId: workout.userId });
   if (!user) {
     throw new Error("Not authenticated — sign in to save workouts");
   }
+  if (user.id !== workout.userId) {
+    console.warn("[DROP] User ID mismatch! auth.uid:", user.id, "workout.userId:", workout.userId);
+  }
 
-  const { error } = await supabase.from("workouts").insert({
+  const insertData = {
     id: workout.id,
-    user_id: workout.userId,
+    user_id: user.id,  // Use auth user ID directly to match RLS policy
     exercise_type: workout.exerciseType,
     count: workout.count,
     duration: workout.duration,
@@ -104,9 +108,13 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
     timestamps: workout.timestamps,
     date: workout.date,
     verified: workout.verified,
-  });
+  };
+  console.log("[DROP] Inserting workout:", insertData);
+
+  const { error, data } = await supabase.from("workouts").insert(insertData).select();
+  console.log("[DROP] Insert result:", { error, data });
   if (error) {
-    console.error("Failed to save workout:", error);
+    console.error("[DROP] Failed to save workout:", error);
     throw new Error(error.message);
   }
 }
