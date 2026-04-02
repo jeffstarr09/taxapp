@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getWorkouts, updateProfile, getFriends, getLeaderboard } from "@/lib/storage";
+import { getWorkouts, updateProfile, getFriends, getLeaderboard, removeFriend } from "@/lib/storage";
 import { getUnlockedAchievements, ACHIEVEMENTS, getTierColor, getTierTextColor } from "@/lib/achievements";
 import { User, WorkoutSession, LeaderboardEntry } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
@@ -348,15 +348,27 @@ export default function ProfilePage() {
               className="flex items-center gap-3 p-3 drop-card rounded-xl"
             >
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
                 style={{ backgroundColor: friend.avatarColor }}
               >
                 {friend.displayName.charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-white font-medium text-sm">{friend.displayName}</p>
                 <p className="text-neutral-600 text-xs">@{friend.username}</p>
               </div>
+              <button
+                onClick={async () => {
+                  await removeFriend(profile.id, friend.id);
+                  setFriends((prev) => prev.filter((f) => f.id !== friend.id));
+                }}
+                className="text-neutral-600 hover:text-drop-400 transition text-xs shrink-0"
+                title="Remove friend"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           ))}
         </div>

@@ -166,11 +166,18 @@ export async function getLeaderboard(
 // ── Friends ────────────────────────────────────────────────────
 
 export async function getFriendIds(userId: string): Promise<string[]> {
+  // Query both directions since we can only insert our own row (RLS)
   const { data } = await getSupabase()
     .from("friendships")
-    .select("friend_id")
-    .eq("user_id", userId);
-  return data?.map((r: { friend_id: string }) => r.friend_id) ?? [];
+    .select("user_id, friend_id")
+    .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
+  if (!data) return [];
+  const ids = new Set<string>();
+  for (const r of data as { user_id: string; friend_id: string }[]) {
+    if (r.user_id === userId) ids.add(r.friend_id);
+    else ids.add(r.user_id);
+  }
+  return Array.from(ids);
 }
 
 export async function getFriends(userId: string): Promise<User[]> {
@@ -184,11 +191,24 @@ export async function getFriends(userId: string): Promise<User[]> {
 }
 
 export async function addFriend(userId: string, friendId: string): Promise<void> {
-  // Add both directions for bidirectional friendship
-  await getSupabase().from("friendships").upsert([
+  // Insert only the current user's row (RLS only allows auth.uid() = user_id).
+  // getFriendIds queries both directions, so one row is sufficient.
+  const { error } = await getSupabase().from("friendships").upsert([
     { user_id: userId, friend_id: friendId },
-    { user_id: friendId, friend_id: userId },
   ]);
+  if (error) {
+    console.error("Failed to add friend:", error);
+    throw new Error(error.message);
+  }
+}
+
+export async function removeFriend(userId: string, friendId: string): Promise<void> {
+  // Remove both possible directions
+  await getSupabase()
+    .from("friendships")
+    .delete()
+    .eq("user_id", userId)
+    .eq("friend_id", friendId);
 }
 
 // ── Legacy sync helpers (for backward compat during transition) ──
