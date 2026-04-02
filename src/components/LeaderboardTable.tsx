@@ -5,17 +5,15 @@ import { LeaderboardEntry } from "@/types";
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
   currentUserId?: string;
+  /** Skip the first N entries (e.g. 3 if podium is shown separately) */
+  startRank?: number;
 }
 
-function getRankDisplay(rank: number): { text: string; style: string } {
-  if (rank === 0) return { text: "1", style: "bg-drop-600 text-white font-black" };
-  if (rank === 1) return { text: "2", style: "bg-neutral-700 text-white font-bold" };
-  if (rank === 2) return { text: "3", style: "bg-neutral-800 text-neutral-300 font-bold" };
-  return { text: `${rank + 1}`, style: "bg-transparent text-neutral-600 font-medium" };
-}
+export default function LeaderboardTable({ entries, currentUserId, startRank = 0 }: LeaderboardTableProps) {
+  const displayEntries = entries.slice(startRank);
+  const maxReps = entries.length > 0 ? entries[0].totalReps : 1;
 
-export default function LeaderboardTable({ entries, currentUserId }: LeaderboardTableProps) {
-  if (entries.length === 0) {
+  if (displayEntries.length === 0) {
     return (
       <div className="text-center py-16">
         <p className="text-neutral-400 text-lg font-medium">No entries yet</p>
@@ -25,60 +23,55 @@ export default function LeaderboardTable({ entries, currentUserId }: Leaderboard
   }
 
   return (
-    <div className="space-y-1.5">
-      {entries.map((entry, index) => {
+    <div className="space-y-1">
+      {displayEntries.map((entry, index) => {
+        const rank = startRank + index + 1;
         const isCurrentUser = entry.userId === currentUserId;
-        const rank = getRankDisplay(index);
+        const barPercent = maxReps > 0 ? Math.max(8, (entry.totalReps / maxReps) * 100) : 8;
+
         return (
           <div
             key={entry.userId}
-            className={`flex items-center gap-3 p-3.5 rounded-xl transition-all ${
-              isCurrentUser
-                ? "drop-card border-drop-900/50 bg-drop-950/20"
-                : "drop-card drop-card-hover"
+            className={`relative overflow-hidden rounded-xl transition-all ${
+              isCurrentUser ? "ring-1 ring-drop-600/40" : ""
             }`}
           >
-            {/* Rank */}
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm ${rank.style}`}>
-              {rank.text}
-            </div>
-
-            {/* Avatar */}
+            {/* Gradient bar background — shows relative score */}
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-xs"
-              style={{ backgroundColor: entry.avatarColor }}
-            >
-              {entry.displayName.charAt(0).toUpperCase()}
-            </div>
+              className={`absolute inset-y-0 left-0 rounded-xl ${
+                isCurrentUser
+                  ? "bg-gradient-to-r from-drop-600/30 to-drop-600/5"
+                  : "bg-gradient-to-r from-drop-600/15 to-transparent"
+              }`}
+              style={{ width: `${barPercent}%` }}
+            />
 
-            {/* Name */}
-            <div className="flex-1 min-w-0">
-              <p className={`font-semibold text-sm truncate ${isCurrentUser ? "text-drop-300" : "text-white"}`}>
-                {entry.displayName}
-                {isCurrentUser && <span className="text-drop-500 text-xs ml-1.5">you</span>}
-              </p>
-              <p className="text-neutral-600 text-xs">@{entry.username}</p>
-            </div>
+            {/* Content */}
+            <div className="relative flex items-center gap-3 px-4 py-3">
+              {/* Rank */}
+              <span className="text-neutral-600 font-bold text-sm tabular-nums w-6 text-center shrink-0">
+                {rank}
+              </span>
 
-            {/* Total reps */}
-            <div className="text-right flex-shrink-0">
-              <p className="text-white font-bold text-lg tabular-nums">{entry.totalReps.toLocaleString()}</p>
-              <p className="text-neutral-600 text-[10px] uppercase tracking-wider">reps</p>
-            </div>
-
-            {/* Extra stats on desktop */}
-            <div className="hidden md:flex items-center gap-5 flex-shrink-0">
-              <div className="text-center w-12">
-                <p className="text-white font-semibold text-sm">{entry.bestSession}</p>
-                <p className="text-neutral-600 text-[10px] uppercase tracking-wider">best</p>
+              {/* Avatar */}
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                style={{ backgroundColor: entry.avatarColor }}
+              >
+                {entry.displayName.charAt(0).toUpperCase()}
               </div>
-              <div className="text-center w-12">
-                <p className="text-white font-semibold text-sm">{entry.averageForm}%</p>
-                <p className="text-neutral-600 text-[10px] uppercase tracking-wider">form</p>
+
+              {/* Name */}
+              <div className="flex-1 min-w-0">
+                <p className={`font-semibold text-sm truncate ${isCurrentUser ? "text-drop-300" : "text-white"}`}>
+                  {entry.displayName}
+                  {isCurrentUser && <span className="text-drop-500 text-xs ml-1.5">you</span>}
+                </p>
               </div>
-              <div className="text-center w-12">
-                <p className="text-drop-400 font-semibold text-sm">{entry.streak}d</p>
-                <p className="text-neutral-600 text-[10px] uppercase tracking-wider">streak</p>
+
+              {/* Reps */}
+              <div className="text-right shrink-0">
+                <p className="text-white font-bold tabular-nums">{entry.totalReps.toLocaleString()}</p>
               </div>
             </div>
           </div>

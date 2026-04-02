@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import LeaderboardTable from "@/components/LeaderboardTable";
+import Podium from "@/components/Podium";
 import AddFriend from "@/components/AddFriend";
 import { useAuth } from "@/lib/auth-context";
 import { getLeaderboard, getWorkouts } from "@/lib/storage";
-import { LeaderboardEntry, ExerciseType, WorkoutSession } from "@/types";
+import { LeaderboardEntry, ExerciseType } from "@/types";
 import { getAvailableExercises } from "@/lib/exercise-config";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 
@@ -24,13 +25,11 @@ export default function LeaderboardPage() {
 
   const loadData = useCallback(async () => {
     if (tab === "challenge") {
-      // For challenge tab, load user's workouts to show progress
       if (profile?.id) {
         const allWorkouts = await getWorkouts(profile.id);
         const todayW = getTodaysWorkouts(allWorkouts, profile.id);
         setChallengeProgress(getChallengeProgress(todaysChallenge, todayW));
       }
-      // Still load leaderboard for today's rankings context
       const leaderboard = await getLeaderboard(false, profile?.id, exerciseType);
       setEntries(leaderboard);
     } else {
@@ -49,8 +48,8 @@ export default function LeaderboardPage() {
   }, [loadData, authLoading]);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-black text-white tracking-tight mb-6">Leaderboard</h1>
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <h1 className="text-2xl font-black text-white tracking-tight mb-4">Leaderboard</h1>
 
       {/* Exercise type filter */}
       {availableExercises.length > 1 && (
@@ -73,7 +72,7 @@ export default function LeaderboardPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-6">
+      <div className="flex gap-1.5 mb-4">
         {(["global", "friends", "challenge"] as TabType[]).map((t) => (
           <button
             key={t}
@@ -90,7 +89,7 @@ export default function LeaderboardPage() {
       </div>
 
       {tab === "friends" && (
-        <div className="mb-6">
+        <div className="mb-4">
           <AddFriend onFriendAdded={loadData} />
         </div>
       )}
@@ -130,14 +129,18 @@ export default function LeaderboardPage() {
             )}
           </div>
 
-          {/* Today's top performers */}
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-3">
-            Today&apos;s Top Performers
-          </h2>
-          <LeaderboardTable entries={entries} currentUserId={profile?.id} />
+          {/* Podium + table */}
+          {entries.length >= 3 && <Podium entries={entries} currentUserId={profile?.id} />}
+          <LeaderboardTable entries={entries} currentUserId={profile?.id} startRank={entries.length >= 3 ? 3 : 0} />
         </div>
       ) : (
-        <LeaderboardTable entries={entries} currentUserId={profile?.id} />
+        <>
+          {/* Podium for top 3 */}
+          {entries.length >= 3 && <Podium entries={entries} currentUserId={profile?.id} />}
+
+          {/* Table for rank 4+ */}
+          <LeaderboardTable entries={entries} currentUserId={profile?.id} startRank={entries.length >= 3 ? 3 : 0} />
+        </>
       )}
 
       {!profile && (
