@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getProfileByUsername, addFriend } from "@/lib/storage";
+import { getProfileByUsername, addFriend, getFriendIds } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
 
 interface AddFriendProps {
@@ -21,7 +21,7 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
       return;
     }
 
-    const trimmed = username.trim().toLowerCase();
+    const trimmed = username.trim().toLowerCase().replace(/^@/, "");
     if (!trimmed) {
       setMessage({ text: "Enter a username", type: "error" });
       return;
@@ -33,19 +33,32 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
     }
 
     setLoading(true);
-    const friend = await getProfileByUsername(trimmed);
-    if (!friend) {
-      setMessage({ text: "User not found", type: "error" });
-      setLoading(false);
-      return;
-    }
+    try {
+      const friend = await getProfileByUsername(trimmed);
+      if (!friend) {
+        setMessage({ text: "User not found — check the spelling", type: "error" });
+        setLoading(false);
+        return;
+      }
 
-    await addFriend(profile.id, friend.id);
-    trackEvent("friend_added");
-    setMessage({ text: `Added ${friend.displayName}`, type: "success" });
-    setUsername("");
-    setLoading(false);
-    onFriendAdded();
+      // Check if already friends
+      const existingFriends = await getFriendIds(profile.id);
+      if (existingFriends.includes(friend.id)) {
+        setMessage({ text: `You're already friends with ${friend.displayName}`, type: "error" });
+        setLoading(false);
+        return;
+      }
+
+      await addFriend(profile.id, friend.id);
+      trackEvent("friend_added");
+      setMessage({ text: `Added ${friend.displayName}!`, type: "success" });
+      setUsername("");
+      onFriendAdded();
+    } catch {
+      setMessage({ text: "Something went wrong — try again", type: "error" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,7 +73,7 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
             setMessage(null);
           }}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          placeholder="Enter username..."
+          placeholder="@username"
           className="flex-1 px-3 py-2 bg-neutral-800 text-white rounded-lg border border-white/5 focus:border-drop-600 focus:outline-none placeholder-neutral-600 text-sm"
         />
         <button
