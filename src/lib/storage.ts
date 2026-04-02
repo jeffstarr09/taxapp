@@ -141,7 +141,6 @@ export async function getLeaderboard(
   if (!data) return [];
 
   let entries: LeaderboardEntry[] = data
-    .filter((row: Record<string, unknown>) => (row.total_reps as number) > 0)
     .map((row: Record<string, unknown>) => ({
       userId: row.user_id as string,
       username: row.username as string,
@@ -157,15 +156,10 @@ export async function getLeaderboard(
   if (friendsOnly && currentUserId) {
     const friendIds = await getFriendIds(currentUserId);
     const allowed = new Set([currentUserId, ...friendIds]);
-    debugLog("Friends leaderboard filter", {
-      currentUserId,
-      friendIds,
-      totalEntries: entries.length,
-      entryUserIds: entries.map((e) => e.userId),
-      allowedIds: Array.from(allowed),
-    });
     entries = entries.filter((e) => allowed.has(e.userId));
-    debugLog("Friends leaderboard after filter", { count: entries.length });
+  } else {
+    // Global leaderboard: only show users with at least 1 rep
+    entries = entries.filter((e) => e.totalReps > 0);
   }
 
   return entries;
