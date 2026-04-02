@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getWorkouts, getLeaderboard, getActivityFeed } from "@/lib/storage";
+import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 import {
   getNewAchievements,
   dismissAllAchievements,
@@ -32,6 +33,8 @@ export default function HomePage() {
   const [userRank, setUserRank] = useState<number | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
+  const [todaysChallenge, setTodaysChallenge] = useState<ReturnType<typeof getTodaysChallenge> | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -80,6 +83,12 @@ export default function HomePage() {
         // Activity feed
         const feed = await getActivityFeed(profile.id);
         setActivityFeed(feed);
+
+        // Daily challenge
+        const challenge = getTodaysChallenge();
+        setTodaysChallenge(challenge);
+        const todayWorkouts = getTodaysWorkouts(userWorkouts, profile.id);
+        setChallengeProgress(getChallengeProgress(challenge, todayWorkouts));
 
         // Achievements
         const freshAchievements = getNewAchievements(userWorkouts);
@@ -254,6 +263,36 @@ export default function HomePage() {
           </p>
         </div>
       </div>
+
+      {/* Daily Challenge */}
+      {todaysChallenge && challengeProgress && (
+        <div className={`drop-card rounded-xl p-4 mb-6 border ${challengeProgress.completed ? "border-green-500/30" : "border-white/5"}`}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{challengeProgress.completed ? "✅" : "🎯"}</span>
+              <div>
+                <p className="text-white font-bold text-sm">{todaysChallenge.title}</p>
+                <p className="text-neutral-500 text-xs">{todaysChallenge.description}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`font-black text-lg tabular-nums ${challengeProgress.completed ? "text-green-400" : "text-white"}`}>
+                {challengeProgress.current}/{challengeProgress.target}
+              </p>
+              <p className="text-neutral-600 text-[9px] uppercase">{todaysChallenge.unit}</p>
+            </div>
+          </div>
+          <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${challengeProgress.completed ? "bg-green-500" : "bg-drop-600"}`}
+              style={{ width: `${challengeProgress.percent}%` }}
+            />
+          </div>
+          {challengeProgress.completed && (
+            <p className="text-green-400 text-xs font-medium text-center mt-2">Challenge complete!</p>
+          )}
+        </div>
+      )}
 
       {/* Two-column: Leaderboard + Activity Feed */}
       <div className="grid md:grid-cols-2 gap-4">

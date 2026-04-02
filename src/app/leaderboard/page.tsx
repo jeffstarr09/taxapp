@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import AddFriend from "@/components/AddFriend";
 import { useAuth } from "@/lib/auth-context";
-import { getLeaderboard } from "@/lib/storage";
-import { LeaderboardEntry, ExerciseType } from "@/types";
+import { getLeaderboard, getWorkouts } from "@/lib/storage";
+import { LeaderboardEntry, ExerciseType, WorkoutSession } from "@/types";
 import { getAvailableExercises } from "@/lib/exercise-config";
+import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 
-type TabType = "global" | "friends";
+type TabType = "global" | "friends" | "challenge";
 
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<TabType>("global");
@@ -16,16 +17,31 @@ export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: authLoading } = useAuth();
 
+  const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
+  const [todaysChallenge] = useState(getTodaysChallenge);
+
   const availableExercises = getAvailableExercises();
 
   const loadData = useCallback(async () => {
-    const leaderboard = await getLeaderboard(
-      tab === "friends",
-      profile?.id,
-      exerciseType
-    );
-    setEntries(leaderboard);
-  }, [tab, profile, exerciseType]);
+    if (tab === "challenge") {
+      // For challenge tab, load user's workouts to show progress
+      if (profile?.id) {
+        const allWorkouts = await getWorkouts(profile.id);
+        const todayW = getTodaysWorkouts(allWorkouts, profile.id);
+        setChallengeProgress(getChallengeProgress(todaysChallenge, todayW));
+      }
+      // Still load leaderboard for today's rankings context
+      const leaderboard = await getLeaderboard(false, profile?.id, exerciseType);
+      setEntries(leaderboard);
+    } else {
+      const leaderboard = await getLeaderboard(
+        tab === "friends",
+        profile?.id,
+        exerciseType
+      );
+      setEntries(leaderboard);
+    }
+  }, [tab, profile, exerciseType, todaysChallenge]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -58,26 +74,19 @@ export default function LeaderboardPage() {
 
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6">
-        <button
-          onClick={() => setTab("global")}
-          className={`px-5 py-2 rounded-lg font-semibold text-sm transition ${
-            tab === "global"
-              ? "bg-drop-600 text-white"
-              : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
-          }`}
-        >
-          Global
-        </button>
-        <button
-          onClick={() => setTab("friends")}
-          className={`px-5 py-2 rounded-lg font-semibold text-sm transition ${
-            tab === "friends"
-              ? "bg-drop-600 text-white"
-              : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
-          }`}
-        >
-          Friends
-        </button>
+        {(["global", "friends", "challenge"] as TabType[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-5 py-2 rounded-lg font-semibold text-sm transition ${
+              tab === t
+                ? "bg-drop-600 text-white"
+                : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
+            }`}
+          >
+            {t === "global" ? "Global" : t === "friends" ? "Friends" : "Daily"}
+          </button>
+        ))}
       </div>
 
       {tab === "friends" && (
@@ -86,7 +95,50 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      <LeaderboardTable entries={entries} currentUserId={profile?.id} />
+      {tab === "challenge" ? (
+        <div>
+          {/* Daily challenge card */}
+          <div className={`drop-card rounded-xl p-5 mb-6 border ${challengeProgress?.completed ? "border-green-500/30" : "border-white/5"}`}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xl">{challengeProgress?.completed ? "✅" : "🎯"}</span>
+              <div className="flex-1">
+                <p className="text-white font-bold">{todaysChallenge.title}</p>
+                <p className="text-neutral-500 text-sm">{todaysChallenge.description}</p>
+              </div>
+              {challengeProgress && (
+                <div className="text-right">
+                  <p className={`font-black text-xl tabular-nums ${challengeProgress.completed ? "text-green-400" : "text-white"}`}>
+                    {challengeProgress.current}/{challengeProgress.target}
+                  </p>
+                  <p className="text-neutral-600 text-[10px] uppercase">{todaysChallenge.unit}</p>
+                </div>
+              )}
+            </div>
+            {challengeProgress && (
+              <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${challengeProgress.completed ? "bg-green-500" : "bg-drop-600"}`}
+                  style={{ width: `${challengeProgress.percent}%` }}
+                />
+              </div>
+            )}
+            {challengeProgress?.completed && (
+              <p className="text-green-400 text-xs font-medium text-center mt-2">Challenge complete!</p>
+            )}
+            {!profile && (
+              <p className="text-neutral-500 text-xs text-center mt-2">Sign in to track your progress</p>
+            )}
+          </div>
+
+          {/* Today's top performers */}
+          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-medium mb-3">
+            Today&apos;s Top Performers
+          </h2>
+          <LeaderboardTable entries={entries} currentUserId={profile?.id} />
+        </div>
+      ) : (
+        <LeaderboardTable entries={entries} currentUserId={profile?.id} />
+      )}
 
       {!profile && (
         <div className="mt-8 drop-card rounded-xl p-6 text-center">
