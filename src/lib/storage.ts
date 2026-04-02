@@ -134,7 +134,12 @@ export async function getLeaderboard(
     .order("total_reps", { ascending: false });
 
   if (exerciseType) {
-    query = query.eq("exercise_type", exerciseType);
+    if (friendsOnly) {
+      // For friends view: include matching exercise_type OR null (no workouts yet)
+      query = query.or(`exercise_type.eq.${exerciseType},exercise_type.is.null`);
+    } else {
+      query = query.eq("exercise_type", exerciseType);
+    }
   }
 
   const { data } = await query;
