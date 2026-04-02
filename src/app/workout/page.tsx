@@ -19,7 +19,7 @@ import {
   isMilestone,
 } from "@/lib/sounds";
 import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
-import { getActiveAnalyzerThresholds } from "@/lib/pushup-analyzer";
+import { getActiveAnalyzerThresholds, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
 import { debugLog, debugError } from "@/lib/debug-log";
 import { getCalibrationProfile } from "@/lib/calibration";
 import { trackWorkoutEvent, trackEvent } from "@/lib/analytics";
@@ -124,16 +124,26 @@ export default function WorkoutPage() {
 
   const handleSessionEnd = useCallback(
     (count: number, duration: number, avgForm: number, timestamps: number[]) => {
-      if (count > 0) {
+      debugLog("CameraView onSessionEnd fired", { count, duration, avgForm });
+      // Only set if not already captured by handleStop
+      if (count > 0 && !sessionResult) {
         setSessionResult({ count, duration, avgForm, timestamps });
         setShowSummary(true);
       }
     },
-    []
+    [sessionResult]
   );
 
   // Auto-save workout when session result is available
   useEffect(() => {
+    debugLog("Save effect triggered", {
+      hasResult: !!sessionResult,
+      count: sessionResult?.count,
+      saved,
+      saving,
+      hasProfile: !!profile,
+      profileId: profile?.id,
+    });
     if (!sessionResult || saved || saving) return;
     // Cannot save without a signed-in user — Supabase RLS will reject it
     if (!profile?.id) {
@@ -200,6 +210,17 @@ export default function WorkoutPage() {
   };
 
   const handleStop = () => {
+    // Capture session data BEFORE setting isActive=false, because that
+    // unmounts CameraView (via the portal), killing its onSessionEnd effect.
+    const count = exerciseState.count;
+    if (count > 0) {
+      const avgForm = getAverageFormScore();
+      const timestamps = getRepTimestamps();
+      debugLog("Capturing session from handleStop", { count, elapsed, avgForm, timestamps: timestamps.length });
+      setSessionResult({ count, duration: elapsed, avgForm, timestamps });
+      setShowSummary(true);
+    }
+
     setIsActive(false);
     playEndSound();
     triggerHaptic("medium");
