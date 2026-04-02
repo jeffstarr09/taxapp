@@ -134,6 +134,14 @@ export default function WorkoutPage() {
 
   // Auto-save workout when session result is available
   useEffect(() => {
+    debugLog("Save effect triggered", {
+      hasResult: !!sessionResult,
+      count: sessionResult?.count,
+      saved,
+      saving,
+      hasProfile: !!profile,
+      profileId: profile?.id,
+    });
     if (!sessionResult || saved || saving) return;
     // Cannot save without a signed-in user — Supabase RLS will reject it
     if (!profile?.id) {
