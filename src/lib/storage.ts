@@ -157,7 +157,15 @@ export async function getLeaderboard(
   if (friendsOnly && currentUserId) {
     const friendIds = await getFriendIds(currentUserId);
     const allowed = new Set([currentUserId, ...friendIds]);
+    debugLog("Friends leaderboard filter", {
+      currentUserId,
+      friendIds,
+      totalEntries: entries.length,
+      entryUserIds: entries.map((e) => e.userId),
+      allowedIds: Array.from(allowed),
+    });
     entries = entries.filter((e) => allowed.has(e.userId));
+    debugLog("Friends leaderboard after filter", { count: entries.length });
   }
 
   return entries;
@@ -167,17 +175,20 @@ export async function getLeaderboard(
 
 export async function getFriendIds(userId: string): Promise<string[]> {
   // Query both directions since we can only insert our own row (RLS)
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from("friendships")
     .select("user_id, friend_id")
     .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
+  debugLog("getFriendIds query", { userId, rows: data?.length, error: error?.message, data });
   if (!data) return [];
   const ids = new Set<string>();
   for (const r of data as { user_id: string; friend_id: string }[]) {
     if (r.user_id === userId) ids.add(r.friend_id);
     else ids.add(r.user_id);
   }
-  return Array.from(ids);
+  const result = Array.from(ids);
+  debugLog("getFriendIds result", { friendIds: result });
+  return result;
 }
 
 export async function getFriends(userId: string): Promise<User[]> {
@@ -193,11 +204,13 @@ export async function getFriends(userId: string): Promise<User[]> {
 export async function addFriend(userId: string, friendId: string): Promise<void> {
   // Insert only the current user's row (RLS only allows auth.uid() = user_id).
   // getFriendIds queries both directions, so one row is sufficient.
-  const { error } = await getSupabase().from("friendships").upsert([
+  debugLog("addFriend called", { userId, friendId });
+  const { error, data } = await getSupabase().from("friendships").upsert([
     { user_id: userId, friend_id: friendId },
-  ]);
+  ]).select();
+  debugLog("addFriend result", { error: error?.message, data });
   if (error) {
-    console.error("Failed to add friend:", error);
+    debugError("addFriend failed", { code: error.code, message: error.message, details: error.details });
     throw new Error(error.message);
   }
 }
