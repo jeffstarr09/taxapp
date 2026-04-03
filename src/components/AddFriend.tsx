@@ -62,30 +62,34 @@ export default function AddFriend({ onFriendAdded }: AddFriendProps) {
   };
 
   return (
-    <div className="drop-card rounded-xl p-4">
-      <h3 className="text-white font-semibold text-sm mb-3">Add Friend</h3>
+    <div>
       <div className="flex gap-2">
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-            setMessage(null);
-          }}
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          placeholder="@username"
-          className="flex-1 px-3 py-2 bg-neutral-800 text-white rounded-lg border border-white/5 focus:border-drop-600 focus:outline-none placeholder-neutral-600 text-sm"
-        />
+        <div className="flex-1 relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setMessage(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            placeholder="Search @username"
+            className="w-full pl-9 pr-3 py-3 bg-white text-gray-900 rounded-xl border border-gray-200 focus:border-[#e8450a] focus:outline-none placeholder-gray-400 text-sm"
+          />
+        </div>
         <button
           onClick={handleAdd}
           disabled={loading}
-          className="px-4 py-2 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition font-semibold text-sm disabled:opacity-50"
+          className="px-5 py-3 bg-[#e8450a] text-white rounded-xl font-semibold text-sm disabled:opacity-50"
         >
           {loading ? "..." : "Add"}
         </button>
       </div>
       {message && (
-        <p className={`mt-2 text-xs ${message.type === "success" ? "text-green-400" : "text-drop-400"}`}>
+        <p className={`mt-2 text-xs ${message.type === "success" ? "text-green-600" : "text-red-500"}`}>
           {message.text}
         </p>
       )}

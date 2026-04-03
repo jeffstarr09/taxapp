@@ -8,7 +8,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0a0a0a",
+  themeColor: "#f7f7f7",
 };
 
 export const metadata: Metadata = {
@@ -76,13 +76,13 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
       </head>
-      <body className="font-sans antialiased noise-bg">
+      <body className="font-sans antialiased bg-[#f7f7f7] text-neutral-900">
         <AuthProvider>
           <AnalyticsProvider>
-            <Navbar />
-            <main className="pt-4 pb-24 md:pt-20 md:pb-4 min-h-screen relative z-10">
+            <main className="pb-20 min-h-screen">
               {children}
             </main>
+            <Navbar />
           </AnalyticsProvider>
         </AuthProvider>
       </body>

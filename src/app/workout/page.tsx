@@ -386,133 +386,71 @@ export default function WorkoutPage() {
 
   // ── Pre-workout setup view ──
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl font-black text-white tracking-tight">Workout</h1>
+    <div className="max-w-lg mx-auto px-5 pt-6">
+      {/* Back link */}
+      <button onClick={() => window.history.back()} className="text-gray-400 text-sm font-medium mb-6 flex items-center gap-1">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+        Back
+      </button>
+
+      {/* Pushup guide image in phone frame */}
+      <div className="drop-card rounded-2xl p-4 mb-8 flex items-center justify-center" style={{ minHeight: 200 }}>
+        <img
+          src="/pushup-guide.png"
+          alt="Pushup position guide"
+          className="w-full max-w-sm h-auto object-contain"
+        />
       </div>
 
-      {/* Exercise selector */}
-      {availableExercises.length > 1 && (
-        <div className="flex gap-2 mb-6">
-          {availableExercises.map((ex) => (
-            <button
-              key={ex.type}
-              onClick={() => setExerciseType(ex.type)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                exerciseType === ex.type
-                  ? "bg-drop-600 text-white"
-                  : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
-              }`}
-            >
-              <span>{ex.icon}</span>
-              {ex.labelPlural}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-[1fr,300px] gap-4">
-        {/* Setup checklist */}
-        <div className="relative">
-          <div className="aspect-[4/3] drop-card rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center p-6 sm:p-8">
-            <div className="w-14 h-14 rounded-2xl bg-drop-600/10 flex items-center justify-center mb-4">
-              <svg
-                className="w-7 h-7 text-drop-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-lg font-bold text-white mb-1">Setup Checklist</h2>
-            <p className="text-neutral-500 text-xs text-center mb-5 max-w-xs">
-              Follow these steps for the most accurate {exerciseConfig.label.toLowerCase()} tracking
-            </p>
-
-            <div className="w-full max-w-sm space-y-3">
-              {[
-                {
-                  icon: (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                    </svg>
-                  ),
-                  title: "Distance: 4–8 feet away",
-                  desc: "Prop your phone so your full body is in frame",
-                },
-                {
-                  icon: (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                  ),
-                  title: "Side angle view",
-                  desc: "Camera should see you from the side, not front-on",
-                },
-                {
-                  icon: (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.06 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-                    </svg>
-                  ),
-                  title: "Good lighting",
-                  desc: "Well-lit room — avoid backlighting or shadows on your body",
-                },
-                {
-                  icon: (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                    </svg>
-                  ),
-                  title: "Stable surface",
-                  desc: "Lean your phone against something sturdy — no wobble",
-                },
-              ].map((step) => (
-                <div key={step.title} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="mt-0.5 text-drop-500 shrink-0">{step.icon}</div>
-                  <div>
-                    <p className="text-white text-sm font-semibold">{step.title}</p>
-                    <p className="text-neutral-500 text-xs mt-0.5">{step.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Setup steps — vertical list */}
+      <div className="space-y-5 mb-8">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+            </svg>
           </div>
-
-          {/* Start button */}
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={handleStart}
-              className="px-14 py-4 bg-drop-600 text-white text-lg font-black rounded-xl hover:bg-drop-700 transition drop-glow uppercase tracking-wider"
-            >
-              Drop
-            </button>
+          <div>
+            <p className="font-bold text-gray-900">Get your phone into position</p>
+            <p className="text-gray-400 text-sm">Secure it at a stable angle</p>
           </div>
         </div>
 
-        {/* HUD sidebar — pre-workout */}
-        <div className="lg:sticky lg:top-24">
-          <WorkoutHUD state={exerciseState} elapsed={elapsed} isActive={isActive} />
-          <div className="mt-4 drop-card rounded-xl p-4">
-            <h3 className="text-white font-semibold text-xs uppercase tracking-wider mb-3">Tips</h3>
-            <ul className="text-neutral-500 text-xs space-y-2">
-              {exerciseConfig.setupTips.map((tip) => (
-                <li key={tip} className="flex items-start gap-2">
-                  <span className="text-drop-500 mt-0.5 text-[10px]">&#x25CF;</span>
-                  {tip}
-                </li>
-              ))}
-            </ul>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-bold text-gray-900">Side angle</p>
+            <p className="text-gray-400 text-sm">Camera sees full body</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-bold text-gray-900">Good lighting</p>
+            <p className="text-gray-400 text-sm">Face a window or lamp</p>
           </div>
         </div>
       </div>
+
+      {/* Start button */}
+      <button
+        onClick={handleStart}
+        className="w-full py-4 bg-[#dc2626] text-white text-lg font-bold rounded-2xl"
+      >
+        Start Workout
+      </button>
 
       {summaryPortal}
 

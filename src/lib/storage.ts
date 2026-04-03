@@ -223,6 +223,49 @@ export async function removeFriend(userId: string, friendId: string): Promise<vo
     .eq("friend_id", friendId);
 }
 
+// ── Activity Feed ─────────────────────────────────────────────
+
+export async function getActivityFeed(userId: string): Promise<import("@/types").ActivityFeedItem[]> {
+  const friendIds = await getFriendIds(userId);
+  const allIds = [userId, ...friendIds];
+  if (allIds.length === 0) return [];
+
+  const { data } = await getSupabase()
+    .from("workouts")
+    .select("id, user_id, exercise_type, count, date")
+    .in("user_id", allIds)
+    .order("date", { ascending: false })
+    .limit(20);
+
+  if (!data || data.length === 0) return [];
+
+  // Batch-fetch profiles for all users in the feed
+  const userIds = Array.from(new Set(data.map((w: Record<string, unknown>) => w.user_id as string)));
+  const { data: profiles } = await getSupabase()
+    .from("profiles")
+    .select("id, username, display_name, avatar_color")
+    .in("id", userIds);
+
+  const profileMap = new Map<string, { username: string; display_name: string; avatar_color: string }>();
+  for (const p of (profiles ?? []) as { id: string; username: string; display_name: string; avatar_color: string }[]) {
+    profileMap.set(p.id, p);
+  }
+
+  return data.map((w: Record<string, unknown>) => {
+    const p = profileMap.get(w.user_id as string);
+    return {
+      id: w.id as string,
+      userId: w.user_id as string,
+      username: p?.username ?? "unknown",
+      displayName: p?.display_name ?? "Unknown",
+      avatarColor: p?.avatar_color ?? "#666",
+      exerciseType: (w.exercise_type as import("@/types").ExerciseType) ?? "pushup",
+      count: w.count as number,
+      date: w.date as string,
+    };
+  });
+}
+
 // ── Legacy sync helpers (for backward compat during transition) ──
 
 /** @deprecated Use useAuth() hook instead */

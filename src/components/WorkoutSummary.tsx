@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { ExerciseType } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
+import { getTodaysChallenge, getChallengeProgress } from "@/lib/challenges";
 
 interface WorkoutSummaryProps {
   count: number;
@@ -18,6 +19,7 @@ interface WorkoutSummaryProps {
   onFeedback?: (feedback: {
     rating: "accurate" | "overcounted" | "undercounted";
   }) => void;
+  todaysWorkoutCounts?: number[];
 }
 
 function formatTime(seconds: number): string {
@@ -39,11 +41,26 @@ function getShareText(count: number, grade: string, exerciseLabel: string): stri
   return `I just dropped ${count} ${exerciseLabel.toLowerCase()} and scored ${grade} form on DROP — the AI workout counter. Think you can beat that?`;
 }
 
-export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, onRetrySave, onFeedback }: WorkoutSummaryProps) {
+export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, onRetrySave, onFeedback, todaysWorkoutCounts }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const [shared, setShared] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+
+  // Daily challenge progress
+  const challenge = getTodaysChallenge();
+  const fakeWorkouts = (todaysWorkoutCounts || [count]).map((c, i) => ({
+    id: `temp-${i}`,
+    userId: "",
+    exerciseType: exerciseType as ExerciseType,
+    count: c,
+    duration: 0,
+    averageFormScore: averageForm,
+    timestamps: [] as number[],
+    date: new Date().toISOString(),
+    verified: true,
+  }));
+  const challengeStatus = getChallengeProgress(challenge, fakeWorkouts);
 
   const config = getExerciseConfig(exerciseType);
   const shareText = getShareText(count, gradeInfo.grade, config.labelPlural);
@@ -131,6 +148,28 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
             />
           </div>
           <p className="text-neutral-500 text-xs mt-2 text-center">{gradeInfo.message}</p>
+        </div>
+
+        {/* Daily challenge progress */}
+        <div className={`mb-4 p-3 rounded-xl border ${challengeStatus.completed ? "border-green-500/20 bg-green-500/5" : "border-white/5 bg-white/[0.02]"}`}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{challengeStatus.completed ? "✅" : "🎯"}</span>
+              <span className="text-white font-semibold text-xs">{challenge.title}</span>
+            </div>
+            <span className={`text-xs font-bold tabular-nums ${challengeStatus.completed ? "text-green-400" : "text-neutral-400"}`}>
+              {challengeStatus.current}/{challengeStatus.target} {challenge.unit}
+            </span>
+          </div>
+          <div className="h-1 bg-neutral-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${challengeStatus.completed ? "bg-green-500" : "bg-drop-600"}`}
+              style={{ width: `${challengeStatus.percent}%` }}
+            />
+          </div>
+          {challengeStatus.completed && (
+            <p className="text-green-400 text-[10px] font-medium text-center mt-1.5">Daily challenge complete!</p>
+          )}
         </div>
 
         {/* AI Verified badge */}

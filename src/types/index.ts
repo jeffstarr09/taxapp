@@ -59,3 +59,14 @@ export interface FriendRequest {
   status: "pending" | "accepted" | "rejected";
   createdAt: string;
 }
+
+export interface ActivityFeedItem {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarColor: string;
+  exerciseType: ExerciseType;
+  count: number;
+  date: string;
+}
