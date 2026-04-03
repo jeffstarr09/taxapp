@@ -395,12 +395,12 @@ export default function WorkoutPage() {
         Back
       </button>
 
-      {/* Pushup guide image in phone frame */}
-      <div className="drop-card rounded-2xl p-4 mb-8 flex items-center justify-center" style={{ minHeight: 200 }}>
+      {/* Pushup guide illustration */}
+      <div className="rounded-2xl mb-8 overflow-hidden">
         <img
-          src="/pushup-guide.png"
-          alt="Pushup position guide"
-          className="w-full max-w-sm h-auto object-contain"
+          src="/workout-setup.png"
+          alt="Pushup position guide — phone showing proper form"
+          className="w-full h-auto object-contain"
         />
       </div>
 
