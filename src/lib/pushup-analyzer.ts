@@ -100,6 +100,8 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
   const rightHip = getKeypointByName(keypoints, "right_hip");
   const leftAnkle = getKeypointByName(keypoints, "left_ankle");
   const rightAnkle = getKeypointByName(keypoints, "right_ankle");
+  const leftKnee = getKeypointByName(keypoints, "left_knee");
+  const rightKnee = getKeypointByName(keypoints, "right_knee");
 
   // Accept EITHER side having enough confident keypoints
   const leftConfidence = [leftShoulder, leftElbow, leftWrist, leftHip].every(
@@ -140,14 +142,24 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
 
   if (!state.isReady) {
     if (hasFullBody) {
-      // Also check body looks like a plank — arms roughly extended (elbow angle > 130°)
+      // Check body looks like a plank — arms extended + legs straight
       const readySide = leftConfidence ? "left" : "right";
       const readyShoulder = readySide === "left" ? leftShoulder! : rightShoulder!;
       const readyElbow = readySide === "left" ? leftElbow! : rightElbow!;
       const readyWrist = readySide === "left" ? leftWrist! : rightWrist!;
+      const readyKnee = readySide === "left" ? leftKnee : rightKnee;
+      const readyHip = readySide === "left" ? leftHip! : rightHip!;
+      const readyAnkle = readySide === "left" ? leftAnkle : rightAnkle;
       const readyElbowAngle = calculateAngle(readyShoulder, readyElbow, readyWrist);
 
-      if (readyElbowAngle > 130) {
+      // Check legs are straight (not kneeling)
+      let readyLegsOk = true;
+      if (readyKnee && readyKnee.score > t.confidenceThreshold && readyAnkle && readyAnkle.score > t.confidenceThreshold) {
+        const readyKneeAngle = calculateAngle(readyHip, readyKnee, readyAnkle);
+        readyLegsOk = readyKneeAngle >= 145;
+      }
+
+      if (readyElbowAngle > 130 && readyLegsOk) {
         state.readyFrames++;
       } else {
         // Body visible but not in plank — slow decay
@@ -205,6 +217,7 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
   const wrist = useLeft ? leftWrist! : rightWrist!;
   const hip = useLeft ? leftHip! : rightHip!;
   const ankle = useLeft ? leftAnkle : rightAnkle;
+  const knee = useLeft ? leftKnee : rightKnee;
 
   // Calculate raw elbow angle then smooth it
   const rawElbowAngle = calculateAngle(shoulder, elbow, wrist);
@@ -228,6 +241,15 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
   }
   state.lastBodyAlignment = bodyAlignment;
 
+  // Detect knee pushups: if knee is visible, check hip-knee-ankle angle.
+  // Straight legs have ~170-180°, knees on floor have ~90-130°.
+  let kneeAngle = 180;
+  let kneesOnFloor = false;
+  if (knee && knee.score > t.confidenceThreshold && ankle && ankle.score > t.confidenceThreshold) {
+    kneeAngle = calculateAngle(hip, knee, ankle);
+    kneesOnFloor = kneeAngle < 145;
+  }
+
   // Avg confidence for this frame
   const avgConfidence = useLeft
     ? (leftShoulder!.score + leftElbow!.score + leftWrist!.score + leftHip!.score) / 4
@@ -246,14 +268,22 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
   let formScore = 100;
   let feedback = "";
 
+  // Reject knee pushups — knees on floor
+  if (kneesOnFloor) {
+    formScore -= 50;
+    feedback = "Straighten your legs — no knee pushups";
+  }
+
   // Check body alignment
   if (bodyAlignment < t.bodyAlignmentThreshold) {
     const penalty = Math.min(40, (t.bodyAlignmentThreshold - bodyAlignment) * 2);
     formScore -= penalty;
-    if (bodyAlignment < 140) {
-      feedback = "Keep your body straight — avoid sagging hips";
-    } else {
-      feedback = "Slight hip drop detected — engage your core";
+    if (!feedback) {
+      if (bodyAlignment < 140) {
+        feedback = "Keep your body straight — avoid sagging hips";
+      } else {
+        feedback = "Slight hip drop detected — engage your core";
+      }
     }
   }
 
@@ -280,10 +310,13 @@ export function analyzePushup(keypoints: PoseKeypoint[]): ExerciseState {
     if (!feedback) feedback = "Good depth! Now push up";
   } else if (elbowAngle >= t.elbowUpAngle) {
     // Count a rep when transitioning from down to up
+    // Block rep if knees are on the floor or body alignment is too poor
     if (
       state.wasDown &&
       previousPhase !== "up" &&
-      state.framesSinceLastRep > t.minFramesBetweenReps
+      state.framesSinceLastRep > t.minFramesBetweenReps &&
+      !kneesOnFloor &&
+      bodyAlignment >= 140
     ) {
       state.count++;
       state.wasDown = false;
