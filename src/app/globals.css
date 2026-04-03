@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --drop-red: #dc2626;
-  --drop-red-glow: rgba(220, 38, 38, 0.15);
+  --foreground-rgb: 23, 23, 23;
+  --bg-primary: #f7f7f7;
+  --bg-secondary: #ffffff;
+  --drop-orange: #e8450a;
+  --drop-orange-light: rgba(232, 69, 10, 0.1);
 }
 
 body {
@@ -32,19 +32,19 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #ccc;
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #aaa;
 }
 
-/* DROP brand card */
+/* DROP brand card — light theme */
 .drop-card {
-  background: linear-gradient(135deg, rgba(17, 17, 17, 0.9), rgba(25, 25, 25, 0.9));
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
 }
 
 .drop-card-hover {
@@ -52,16 +52,8 @@ body {
 }
 
 .drop-card-hover:hover {
-  border-color: rgba(220, 38, 38, 0.3);
-  box-shadow: 0 0 30px rgba(220, 38, 38, 0.08);
-}
-
-.drop-glow {
-  box-shadow: 0 0 40px rgba(220, 38, 38, 0.15), 0 0 80px rgba(220, 38, 38, 0.05);
-}
-
-.drop-text-glow {
-  text-shadow: 0 0 40px rgba(220, 38, 38, 0.5);
+  border-color: rgba(232, 69, 10, 0.2);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 /* Rep count animation */
@@ -97,34 +89,6 @@ body {
   animation: slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Red line accent */
-.red-line {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #dc2626, transparent);
-}
-
-/* Gradient text */
-.text-gradient-red {
-  background: linear-gradient(135deg, #ffffff, #fca5a5);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Noise texture overlay */
-.noise-bg::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.015;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-}
-
 /* Hide navbar and main content when fullscreen workout is active */
 body.workout-active > * {
   visibility: hidden !important;
@@ -136,23 +100,28 @@ body.workout-active > [data-workout-overlay] {
 /* Phase badges */
 .phase-down {
   background: rgba(220, 38, 38, 0.2);
-  color: #fca5a5;
+  color: #dc2626;
   border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
 .phase-up {
   background: rgba(34, 197, 94, 0.2);
-  color: #86efac;
+  color: #16a34a;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .phase-transition {
   background: rgba(250, 204, 21, 0.2);
-  color: #fde68a;
+  color: #ca8a04;
   border: 1px solid rgba(250, 204, 21, 0.3);
 }
 
 /* Skeleton overlay colors */
 .skeleton-red {
   stroke: #dc2626;
+}
+
+/* Gradient streak card */
+.streak-gradient {
+  background: linear-gradient(135deg, #e8450a, #dc2626);
 }

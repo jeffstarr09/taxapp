@@ -2,43 +2,57 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
   {
     href: "/",
     label: "Home",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+    icon: (active: boolean) => (
+      <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={active ? 0 : 1.5} stroke="currentColor">
+        {active ? (
+          <path d="m11.47 3.841-.745.745-7.5 7.5a.75.75 0 1 0 1.06 1.06l.22-.219V19.5a2.25 2.25 0 0 0 2.25 2.25h3a.75.75 0 0 0 .75-.75v-4.5a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v4.5c0 .414.336.75.75.75h3a2.25 2.25 0 0 0 2.25-2.25v-6.573l.22.219a.75.75 0 1 0 1.06-1.06l-7.5-7.5-.745-.746a1.125 1.125 0 0 0-1.59 0Z" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+        )}
       </svg>
     ),
   },
   {
     href: "/workout",
     label: "Workout",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z" />
+    icon: (active: boolean) => (
+      <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={active ? 0 : 1.5} stroke="currentColor">
+        {active ? (
+          <path fillRule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clipRule="evenodd" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+        )}
       </svg>
     ),
   },
   {
     href: "/leaderboard",
     label: "Ranks",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+    icon: (active: boolean) => (
+      <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={active ? 0 : 1.5} stroke="currentColor">
+        {active ? (
+          <path fillRule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 0 0-.584.859 6.753 6.753 0 0 0 6.138 5.6 6.73 6.73 0 0 0 2.743 1.346A6.707 6.707 0 0 1 9.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a.75.75 0 0 0 0 1.5h12.17a.75.75 0 0 0 0-1.5h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.707 6.707 0 0 1-1.112-3.173 6.73 6.73 0 0 0 2.743-1.347 6.753 6.753 0 0 0 6.139-5.6.75.75 0 0 0-.585-.858 47.077 47.077 0 0 0-3.07-.543V2.62a.75.75 0 0 0-.658-.744 49.22 49.22 0 0 0-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 0 0-.657.744Z" clipRule="evenodd" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .982-3.172M8.25 8.25a4.5 4.5 0 0 1-4.152-6.188.75.75 0 0 1 .919-.432c1.164.394 2.393.643 3.667.748M15.75 8.25a4.5 4.5 0 0 0 4.152-6.188.75.75 0 0 0-.919-.432c-1.164.394-2.393.643-3.667.748" />
+        )}
       </svg>
     ),
   },
   {
     href: "/profile",
     label: "Profile",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+    icon: (active: boolean) => (
+      <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={active ? 0 : 1.5} stroke="currentColor">
+        {active ? (
+          <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        )}
       </svg>
     ),
   },
@@ -46,64 +60,28 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { profile, loading } = useAuth();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-white/5 md:top-0 md:bottom-auto md:border-t-0 md:border-b md:border-white/5">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="flex items-center justify-around md:justify-start md:gap-1 h-16">
-          {/* Logo */}
-          <Link href="/" className="hidden md:flex items-center gap-2 mr-8">
-            <span className="text-2xl font-black tracking-tighter text-white">
-              DR<span className="text-drop-500">O</span>P
-            </span>
-          </Link>
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200">
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center justify-around h-16">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 px-3 py-2 rounded-xl transition-all ${
-                  active
-                    ? "text-white bg-drop-600/15"
-                    : "text-neutral-500 hover:text-white hover:bg-white/5"
+                className={`flex flex-col items-center gap-0.5 px-4 py-1.5 transition-colors ${
+                  active ? "text-[#e8450a]" : "text-gray-400"
                 }`}
               >
-                {item.icon}
-                <span className={`text-xs md:text-sm ${active ? "font-semibold" : "font-medium"}`}>
+                {item.icon(active)}
+                <span className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}>
                   {item.label}
                 </span>
               </Link>
             );
           })}
-
-          {/* Auth status — desktop only */}
-          {!loading && (
-            <div className="hidden md:flex items-center ml-auto">
-              {profile ? (
-                <Link href="/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition">
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{
-                      backgroundColor: profile.avatar_color,
-                      color: profile.avatar_color === "#ffffff" ? "#0a0a0a" : "#ffffff",
-                    }}
-                  >
-                    {profile.display_name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-white text-sm font-medium">{profile.display_name}</span>
-                </Link>
-              ) : (
-                <Link
-                  href="/auth"
-                  className="px-4 py-1.5 bg-drop-600 text-white rounded-lg hover:bg-drop-700 transition text-sm font-semibold"
-                >
-                  Sign In
-                </Link>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </nav>

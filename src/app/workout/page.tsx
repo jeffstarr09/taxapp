@@ -386,84 +386,70 @@ export default function WorkoutPage() {
 
   // ── Pre-workout setup view ──
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Exercise selector */}
-      {availableExercises.length > 1 && (
-        <div className="flex gap-2 mb-6">
-          {availableExercises.map((ex) => (
-            <button
-              key={ex.type}
-              onClick={() => setExerciseType(ex.type)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                exerciseType === ex.type
-                  ? "bg-drop-600 text-white"
-                  : "bg-neutral-900 text-neutral-500 hover:text-white hover:bg-neutral-800"
-              }`}
-            >
-              <span>{ex.icon}</span>
-              {ex.labelPlural}
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="max-w-lg mx-auto px-5 pt-6">
+      {/* Back link */}
+      <button onClick={() => window.history.back()} className="text-gray-400 text-sm font-medium mb-6 flex items-center gap-1">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+        Back
+      </button>
 
-      {/* Visual setup — image + minimal text */}
-      <div className="drop-card rounded-2xl p-6 mb-4 overflow-hidden">
-        {/* Setup diagram */}
-        <div className="relative bg-black/40 rounded-xl p-4 mb-5 flex items-center justify-center" style={{ minHeight: 180 }}>
-          <img
-            src="/pushup-guide.png"
-            alt="Pushup position guide"
-            className="h-36 w-auto object-contain opacity-80"
-          />
-          {/* Phone indicator */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-            <div className="w-5 h-8 rounded border-2 border-drop-500/60 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-drop-500/60" />
-            </div>
-            <span className="text-drop-500/60 text-[9px] font-medium">4-8 ft</span>
+      {/* Pushup guide image in phone frame */}
+      <div className="drop-card rounded-2xl p-4 mb-8 flex items-center justify-center" style={{ minHeight: 200 }}>
+        <img
+          src="/pushup-guide.png"
+          alt="Pushup position guide"
+          className="w-full max-w-sm h-auto object-contain"
+        />
+      </div>
+
+      {/* Setup steps — vertical list */}
+      <div className="space-y-5 mb-8">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-bold text-gray-900">Get your phone into position</p>
+            <p className="text-gray-400 text-sm">Secure it at a stable angle</p>
           </div>
         </div>
 
-        {/* Quick setup steps — icon-driven, minimal text */}
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div className="p-2">
-            <div className="w-10 h-10 rounded-xl bg-drop-600/10 flex items-center justify-center mx-auto mb-2">
-              <svg className="w-5 h-5 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-              </svg>
-            </div>
-            <p className="text-white text-xs font-semibold">Prop phone up</p>
-            <p className="text-neutral-600 text-[10px] mt-0.5">Lean against something stable</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
           </div>
-          <div className="p-2">
-            <div className="w-10 h-10 rounded-xl bg-drop-600/10 flex items-center justify-center mx-auto mb-2">
-              <svg className="w-5 h-5 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              </svg>
-            </div>
-            <p className="text-white text-xs font-semibold">Side angle</p>
-            <p className="text-neutral-600 text-[10px] mt-0.5">Full body in frame</p>
+          <div>
+            <p className="font-bold text-gray-900">Side angle</p>
+            <p className="text-gray-400 text-sm">Camera sees full body</p>
           </div>
-          <div className="p-2">
-            <div className="w-10 h-10 rounded-xl bg-drop-600/10 flex items-center justify-center mx-auto mb-2">
-              <svg className="w-5 h-5 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.06 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-              </svg>
-            </div>
-            <p className="text-white text-xs font-semibold">Good light</p>
-            <p className="text-neutral-600 text-[10px] mt-0.5">Avoid backlighting</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-bold text-gray-900">Good lighting</p>
+            <p className="text-gray-400 text-sm">Face a window or lamp</p>
           </div>
         </div>
       </div>
 
-      {/* Start button — big and prominent */}
+      {/* Start button */}
       <button
         onClick={handleStart}
-        className="w-full py-5 bg-drop-600 text-white text-xl font-black rounded-2xl hover:bg-drop-700 transition drop-glow uppercase tracking-wider"
+        className="w-full py-4 bg-[#dc2626] text-white text-lg font-bold rounded-2xl"
       >
-        Drop
+        Start Workout
       </button>
 
       {summaryPortal}
