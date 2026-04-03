@@ -7,6 +7,7 @@ create table public.profiles (
   username text unique not null,
   display_name text not null,
   avatar_color text not null default '#6366f1',
+  avatar_url text,
   created_at timestamptz default now() not null
 );
 
@@ -130,6 +131,7 @@ select
   p.username,
   p.display_name,
   p.avatar_color,
+  p.avatar_url,
   w.exercise_type,
   coalesce(sum(w.count), 0)::integer as total_reps,
   coalesce(max(w.count), 0)::integer as best_session,

@@ -10,6 +10,7 @@ interface Profile {
   username: string;
   display_name: string;
   avatar_color: string;
+  avatar_url: string | null;
   created_at: string;
 }
 

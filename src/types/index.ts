@@ -5,6 +5,7 @@ export interface User {
   username: string;
   displayName: string;
   avatarColor: string;
+  avatarUrl: string | null;
   createdAt: string;
   friends: string[]; // user IDs
 }
@@ -26,6 +27,7 @@ export interface LeaderboardEntry {
   username: string;
   displayName: string;
   avatarColor: string;
+  avatarUrl: string | null;
   totalReps: number;
   bestSession: number;
   averageForm: number;
@@ -66,6 +68,7 @@ export interface ActivityFeedItem {
   username: string;
   displayName: string;
   avatarColor: string;
+  avatarUrl: string | null;
   exerciseType: ExerciseType;
   count: number;
   date: string;

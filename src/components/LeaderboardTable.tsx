@@ -41,12 +41,16 @@ export default function LeaderboardTable({ entries, currentUserId, startRank = 0
             </span>
 
             {/* Avatar */}
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-              style={{ backgroundColor: entry.avatarColor }}
-            >
-              {entry.displayName.substring(0, 2).toUpperCase()}
-            </div>
+            {entry.avatarUrl ? (
+              <img src={entry.avatarUrl} alt={entry.displayName} className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                style={{ backgroundColor: entry.avatarColor }}
+              >
+                {entry.displayName.substring(0, 2).toUpperCase()}
+              </div>
+            )}
 
             {/* Name */}
             <div className="flex-1 min-w-0">
