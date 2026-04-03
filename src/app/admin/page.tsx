@@ -498,11 +498,11 @@ export default function AdminDashboard() {
                   </span>
                   <span className="font-semibold mr-2">[{entry.level.toUpperCase()}]</span>
                   <span>{entry.message}</span>
-                  {entry.data !== undefined && entry.data !== null && (
+                  {entry.data !== undefined && entry.data !== null ? (
                     <span className="text-neutral-500 ml-2">
-                      {typeof entry.data === "string" ? entry.data : JSON.stringify(entry.data)}
+                      {String(typeof entry.data === "string" ? entry.data : JSON.stringify(entry.data))}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               ))}
               {getDebugLog().length === 0 && (
