@@ -244,10 +244,28 @@ export async function getActivityFeed(userId: string): Promise<import("@/types")
 
   // Batch-fetch profiles for all users in the feed
   const userIds = Array.from(new Set(data.map((w: Record<string, unknown>) => w.user_id as string)));
-  const { data: profiles } = await getSupabase()
+  // Try with avatar_url first, fall back without it if column doesn't exist yet
+  let profiles: Record<string, unknown>[] | null = null;
+  let profileError: { message: string } | null = null;
+  const result1 = await getSupabase()
     .from("profiles")
     .select("id, username, display_name, avatar_color, avatar_url")
     .in("id", userIds);
+  if (result1.error) {
+    // avatar_url column may not exist yet — retry without it
+    debugWarn("Activity feed: avatar_url query failed, retrying without it", { error: result1.error.message });
+    const result2 = await getSupabase()
+      .from("profiles")
+      .select("id, username, display_name, avatar_color")
+      .in("id", userIds);
+    profiles = result2.data as Record<string, unknown>[] | null;
+    profileError = result2.error;
+  } else {
+    profiles = result1.data as Record<string, unknown>[] | null;
+    profileError = result1.error;
+  }
+
+  debugLog("Activity feed profile fetch", { userIds, profileCount: profiles?.length, error: profileError?.message });
 
   const profileMap = new Map<string, { username: string; display_name: string; avatar_color: string; avatar_url?: string | null }>();
   for (const p of (profiles ?? []) as { id: string; username: string; display_name: string; avatar_color: string; avatar_url?: string | null }[]) {
