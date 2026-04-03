@@ -395,10 +395,10 @@ export default function WorkoutPage() {
         Back
       </button>
 
-      {/* Pushup guide illustration */}
+      {/* Workout setup illustration */}
       <div className="rounded-2xl mb-8 overflow-hidden">
         <img
-          src="/pushup-guide.png"
+          src="/workout-setup.png"
           alt="Pushup position guide — phone showing proper form"
           className="w-full h-auto object-contain"
         />
