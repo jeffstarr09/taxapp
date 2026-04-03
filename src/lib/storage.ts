@@ -30,7 +30,7 @@ export async function getProfileByUsername(username: string): Promise<User | nul
 
 export async function updateProfile(
   userId: string,
-  updates: { username?: string; display_name?: string; avatar_color?: string }
+  updates: { username?: string; display_name?: string; avatar_color?: string; avatar_url?: string | null }
 ): Promise<void> {
   await getSupabase().from("profiles").update(updates).eq("id", userId);
 }
@@ -40,6 +40,7 @@ function dbProfileToUser(row: {
   username: string;
   display_name: string;
   avatar_color: string;
+  avatar_url?: string | null;
   created_at: string;
 }): User {
   return {
@@ -47,6 +48,7 @@ function dbProfileToUser(row: {
     username: row.username,
     displayName: row.display_name,
     avatarColor: row.avatar_color,
+    avatarUrl: row.avatar_url ?? null,
     createdAt: row.created_at,
     friends: [], // loaded separately
   };
@@ -151,6 +153,7 @@ export async function getLeaderboard(
       username: row.username as string,
       displayName: row.display_name as string,
       avatarColor: row.avatar_color as string,
+      avatarUrl: (row.avatar_url as string) ?? null,
       totalReps: row.total_reps as number,
       bestSession: row.best_session as number,
       averageForm: row.average_form as number,
@@ -243,11 +246,11 @@ export async function getActivityFeed(userId: string): Promise<import("@/types")
   const userIds = Array.from(new Set(data.map((w: Record<string, unknown>) => w.user_id as string)));
   const { data: profiles } = await getSupabase()
     .from("profiles")
-    .select("id, username, display_name, avatar_color")
+    .select("id, username, display_name, avatar_color, avatar_url")
     .in("id", userIds);
 
-  const profileMap = new Map<string, { username: string; display_name: string; avatar_color: string }>();
-  for (const p of (profiles ?? []) as { id: string; username: string; display_name: string; avatar_color: string }[]) {
+  const profileMap = new Map<string, { username: string; display_name: string; avatar_color: string; avatar_url?: string | null }>();
+  for (const p of (profiles ?? []) as { id: string; username: string; display_name: string; avatar_color: string; avatar_url?: string | null }[]) {
     profileMap.set(p.id, p);
   }
 
@@ -259,6 +262,7 @@ export async function getActivityFeed(userId: string): Promise<import("@/types")
       username: p?.username ?? "unknown",
       displayName: p?.display_name ?? "Unknown",
       avatarColor: p?.avatar_color ?? "#666",
+      avatarUrl: p?.avatar_url ?? null,
       exerciseType: (w.exercise_type as import("@/types").ExerciseType) ?? "pushup",
       count: w.count as number,
       date: w.date as string,

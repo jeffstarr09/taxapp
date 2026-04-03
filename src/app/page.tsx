@@ -261,12 +261,16 @@ export default function HomePage() {
               const isYou = item.userId === profile?.id;
               return (
                 <div key={item.id} className="drop-card flex items-center gap-3 px-4 py-3.5">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-                    style={{ backgroundColor: item.avatarColor }}
-                  >
-                    {item.displayName.substring(0, 2).toUpperCase()}
-                  </div>
+                  {item.avatarUrl ? (
+                    <img src={item.avatarUrl} alt={item.displayName} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                      style={{ backgroundColor: item.avatarColor }}
+                    >
+                      {item.displayName.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700">
                       <span className="font-bold text-gray-900">@{isYou ? "you" : item.username}</span>

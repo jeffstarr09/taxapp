@@ -1,6 +1,7 @@
 "use client";
 
 import { LeaderboardEntry } from "@/types";
+import Avatar from "@/components/Avatar";
 
 interface PodiumProps {
   entries: LeaderboardEntry[];
@@ -29,12 +30,20 @@ export default function Podium({ entries, currentUserId }: PodiumProps) {
         return (
           <div key={rank} className="flex flex-col items-center w-28">
             {/* Avatar */}
-            <div
-              className={`${avatarSize} rounded-full flex items-center justify-center text-white font-black ${ringColor}`}
-              style={{ backgroundColor: entry.avatarColor }}
-            >
-              {entry.displayName.substring(0, 2).toUpperCase()}
-            </div>
+            {entry.avatarUrl ? (
+              <img
+                src={entry.avatarUrl}
+                alt={entry.displayName}
+                className={`${avatarSize} rounded-full object-cover ${ringColor}`}
+              />
+            ) : (
+              <div
+                className={`${avatarSize} rounded-full flex items-center justify-center text-white font-black ${ringColor}`}
+                style={{ backgroundColor: entry.avatarColor }}
+              >
+                {entry.displayName.substring(0, 2).toUpperCase()}
+              </div>
+            )}
 
             {/* Rank number */}
             <p className="text-gray-400 text-xs mt-1.5">#{rank}</p>

@@ -9,6 +9,8 @@ import { getUnlockedAchievements, ACHIEVEMENTS } from "@/lib/achievements";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 import { User, WorkoutSession } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
+import Avatar from "@/components/Avatar";
+import AvatarUpload from "@/components/AvatarUpload";
 
 const AVATAR_COLORS = [
   "#dc2626", "#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899",
@@ -105,12 +107,12 @@ export default function ProfilePage() {
     <div className="max-w-lg mx-auto px-5 pt-8">
       {/* Profile header */}
       <div className="flex items-center gap-4 mb-6">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black text-white shrink-0"
-          style={{ backgroundColor: profile.avatar_color }}
-        >
-          {profile.display_name.substring(0, 2).toUpperCase()}
-        </div>
+        <Avatar
+          displayName={profile.display_name}
+          avatarColor={profile.avatar_color}
+          avatarUrl={profile.avatar_url}
+          size="xl"
+        />
         <div>
           <h1 className="text-2xl font-black text-gray-900">{profile.display_name}</h1>
           <p className="text-gray-400 text-sm">@{profile.username}</p>
@@ -228,12 +230,12 @@ export default function ProfilePage() {
         <div className="space-y-2 mb-6">
           {friends.map((friend) => (
             <div key={friend.id} className="drop-card flex items-center gap-3 px-4 py-3.5">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-                style={{ backgroundColor: friend.avatarColor }}
-              >
-                {friend.displayName.substring(0, 2).toUpperCase()}
-              </div>
+              <Avatar
+                displayName={friend.displayName}
+                avatarColor={friend.avatarColor}
+                avatarUrl={friend.avatarUrl}
+                size="md"
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-gray-900 font-bold text-sm">{friend.displayName}</p>
                 <p className="text-gray-400 text-xs">@{friend.username}</p>
@@ -276,7 +278,25 @@ export default function ProfilePage() {
 
         {settingsOpen && (
           <div className="px-5 pb-5 space-y-4">
-            {/* Avatar color */}
+            {/* Avatar photo */}
+            <div>
+              <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2">Profile Photo</label>
+              <AvatarUpload
+                currentUrl={profile.avatar_url}
+                avatarColor={selectedColor}
+                displayName={displayName}
+                onCapture={async (dataUrl) => {
+                  await updateProfile(profile.id, { avatar_url: dataUrl });
+                  await refreshProfile();
+                }}
+                onRemove={async () => {
+                  await updateProfile(profile.id, { avatar_url: null });
+                  await refreshProfile();
+                }}
+              />
+            </div>
+
+            {/* Avatar color (fallback when no photo) */}
             <div>
               <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2">Avatar Color</label>
               <div className="flex gap-3">
