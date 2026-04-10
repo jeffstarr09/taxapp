@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useRef, useState } from "react";
 
 interface AvatarUploadProps {
   currentUrl: string | null;
@@ -11,68 +11,58 @@ interface AvatarUploadProps {
 }
 
 export default function AvatarUpload({ currentUrl, avatarColor, displayName, onCapture, onRemove }: AvatarUploadProps) {
-  const [cameraActive, setCameraActive] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const startCamera = useCallback(async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 400 }, height: { ideal: 400 } },
-      });
-      setStream(mediaStream);
-      setCameraActive(true);
-      // Wait for ref to be available
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          videoRef.current.play();
-        }
-      }, 100);
-    } catch {
-      alert("Could not access camera. Please allow camera permissions.");
-    }
-  }, []);
-
-  const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      setStream(null);
-    }
-    setCameraActive(false);
-  }, [stream]);
-
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    // Square crop from center
-    const size = Math.min(video.videoWidth, video.videoHeight);
-    canvas.width = 200;
-    canvas.height = 200;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const sx = (video.videoWidth - size) / 2;
-    const sy = (video.videoHeight - size) / 2;
-
-    // Mirror the selfie
-    ctx.translate(200, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, sx, sy, size, size, 0, 0, 200, 200);
-
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-    onCapture(dataUrl);
-    stopCamera();
-  }, [onCapture, stopCamera]);
-
+  const [processing, setProcessing] = useState(false);
   const initials = displayName.substring(0, 2).toUpperCase();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate it's an image
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    setProcessing(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) { setProcessing(false); return; }
+
+        // Square crop from center, resize to 200x200
+        const size = Math.min(img.width, img.height);
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { setProcessing(false); return; }
+
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        onCapture(dataUrl);
+        setProcessing(false);
+      };
+      img.onerror = () => {
+        alert("Could not load image. Try a different file.");
+        setProcessing(false);
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
 
   return (
     <div>
-      {/* Current avatar preview */}
       <div className="flex items-center gap-4 mb-3">
         {currentUrl ? (
           <img src={currentUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
@@ -86,10 +76,11 @@ export default function AvatarUpload({ currentUrl, avatarColor, displayName, onC
         )}
         <div className="flex flex-col gap-1.5">
           <button
-            onClick={startCamera}
-            className="px-4 py-2 bg-[#e8450a]/10 text-[#e8450a] rounded-lg text-xs font-semibold"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={processing}
+            className="px-4 py-2 bg-[#e8450a]/10 text-[#e8450a] rounded-lg text-xs font-semibold disabled:opacity-50"
           >
-            Take Selfie
+            {processing ? "Processing..." : currentUrl ? "Change Photo" : "Add Photo"}
           </button>
           {currentUrl && (
             <button
@@ -102,37 +93,16 @@ export default function AvatarUpload({ currentUrl, avatarColor, displayName, onC
         </div>
       </div>
 
-      {/* Camera view */}
-      {cameraActive && (
-        <div className="relative rounded-xl overflow-hidden mb-3 bg-black">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full aspect-square object-cover"
-            style={{ transform: "scaleX(-1)" }}
-          />
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3">
-            <button
-              onClick={capturePhoto}
-              className="w-14 h-14 bg-white rounded-full border-4 border-gray-300 shadow-lg"
-              aria-label="Take photo"
-            />
-            <button
-              onClick={stopCamera}
-              className="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center self-center"
-              aria-label="Cancel"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Hidden file input — accept images, allows camera on mobile */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
-      {/* Hidden canvas for capture */}
+      {/* Hidden canvas for resizing */}
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
