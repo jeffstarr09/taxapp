@@ -54,6 +54,18 @@ function dbProfileToUser(row: {
   };
 }
 
+export async function searchProfiles(query: string, limit: number = 10): Promise<User[]> {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return [];
+  const { data } = await getSupabase()
+    .from("profiles")
+    .select("*")
+    .or(`username.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`)
+    .limit(limit);
+  if (!data) return [];
+  return data.map(dbProfileToUser);
+}
+
 // ── Workout operations ─────────────────────────────────────────
 
 export async function getWorkouts(
