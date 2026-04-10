@@ -77,15 +77,26 @@ create policy "Users can remove own friendships"
   using (auth.uid() = user_id);
 
 -- Function to handle new user signup → auto-create profile
+-- Supports both email/password signups and Google OAuth
+-- Google provides: full_name, avatar_url (or picture)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, username, display_name, avatar_color)
+  insert into public.profiles (id, username, display_name, avatar_color, avatar_url)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'avatar_color', '#6366f1')
+    coalesce(
+      new.raw_user_meta_data->>'display_name',
+      new.raw_user_meta_data->>'full_name',
+      new.raw_user_meta_data->>'name',
+      split_part(new.email, '@', 1)
+    ),
+    coalesce(new.raw_user_meta_data->>'avatar_color', '#6366f1'),
+    coalesce(
+      new.raw_user_meta_data->>'avatar_url',
+      new.raw_user_meta_data->>'picture'
+    )
   );
   return new;
 end;
