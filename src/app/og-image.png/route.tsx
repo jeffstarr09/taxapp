@@ -13,55 +13,58 @@ export async function GET() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0a0a 100%)",
+          background: "#ffffff",
           fontFamily: "system-ui, sans-serif",
         }}
       >
         <div
           style={{
             display: "flex",
-            fontSize: 140,
+            fontSize: 180,
             fontWeight: 900,
             letterSpacing: "-0.05em",
             marginBottom: 20,
           }}
         >
-          <span style={{ color: "#ffffff" }}>DR</span>
-          <span style={{ color: "#dc2626" }}>O</span>
-          <span style={{ color: "#ffffff" }}>P</span>
+          <span style={{ color: "#111111" }}>DR</span>
+          <span style={{ color: "#e8450a" }}>O</span>
+          <span style={{ color: "#111111" }}>P</span>
         </div>
         <div
           style={{
-            width: 120,
-            height: 3,
-            background: "linear-gradient(90deg, transparent, #dc2626, transparent)",
-            marginBottom: 30,
+            width: 140,
+            height: 4,
+            background: "#e8450a",
+            borderRadius: 4,
+            marginBottom: 40,
           }}
         />
         <div
           style={{
-            color: "#a3a3a3",
-            fontSize: 32,
-            fontWeight: 500,
+            color: "#111111",
+            fontSize: 44,
+            fontWeight: 700,
             textAlign: "center",
-            maxWidth: 700,
+            maxWidth: 900,
+            marginBottom: 20,
           }}
         >
-          AI-Powered Push-up Counter
+          AI-Powered Pushup Counter
         </div>
         <div
           style={{
             display: "flex",
             gap: 40,
-            marginTop: 50,
-            color: "#737373",
-            fontSize: 22,
+            marginTop: 30,
+            color: "#6b7280",
+            fontSize: 26,
+            fontWeight: 500,
           }}
         >
           <span>Real-time Form Tracking</span>
-          <span style={{ color: "#dc2626" }}>•</span>
+          <span style={{ color: "#e8450a" }}>•</span>
           <span>Leaderboards</span>
-          <span style={{ color: "#dc2626" }}>•</span>
+          <span style={{ color: "#e8450a" }}>•</span>
           <span>Daily Challenges</span>
         </div>
       </div>
