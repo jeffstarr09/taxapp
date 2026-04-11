@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
@@ -23,13 +23,16 @@ export default function AuthPage() {
   const [resetSent, setResetSent] = useState(false);
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // Surface OAuth errors bounced back from /auth/callback
+  // Surface OAuth errors bounced back from /auth/callback.
+  // Read from window.location directly instead of useSearchParams to avoid
+  // the Next.js 14 Suspense-boundary requirement during static prerender.
   useEffect(() => {
-    const errParam = searchParams.get("error");
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const errParam = params.get("error");
     if (errParam) setError(errParam);
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
