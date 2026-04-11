@@ -182,6 +182,28 @@ export async function getLeaderboard(
     entries = entries.filter((e) => e.totalReps > 0);
   }
 
+  // The leaderboard view may have been created before avatar_url was added
+  // to the profiles table, in which case row.avatar_url is missing. Batch-
+  // fetch the current avatar_url for every entry directly from profiles so
+  // photos show up on the leaderboard regardless of view age.
+  if (entries.length > 0) {
+    const ids = entries.map((e) => e.userId);
+    const { data: profileRows } = await getSupabase()
+      .from("profiles")
+      .select("id, avatar_url")
+      .in("id", ids);
+    if (profileRows) {
+      const urlMap = new Map<string, string | null>();
+      for (const p of profileRows as { id: string; avatar_url: string | null }[]) {
+        urlMap.set(p.id, p.avatar_url ?? null);
+      }
+      entries = entries.map((e) => ({
+        ...e,
+        avatarUrl: urlMap.get(e.userId) ?? e.avatarUrl,
+      }));
+    }
+  }
+
   return entries;
 }
 

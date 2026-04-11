@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
-const AVATAR_COLORS = [
-  "#dc2626", "#ef4444", "#f97316", "#eab308", "#22c55e",
-  "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280",
-];
+// Default avatar background used when the user hasn't uploaded a photo yet.
+// Users can no longer pick a color — everyone starts with the same neutral
+// slate and differentiates themselves by adding a profile photo.
+const DEFAULT_AVATAR_COLOR = "#6b7280";
 
 export default function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("signup");
@@ -16,7 +16,6 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[6]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
@@ -78,7 +77,7 @@ export default function AuthPage() {
         return;
       }
 
-      const result = await signUp(email, password, trimmedUsername, displayName.trim(), avatarColor);
+      const result = await signUp(email, password, trimmedUsername, displayName.trim(), DEFAULT_AVATAR_COLOR);
       if (result.error) {
         setError(result.error);
       } else {
@@ -230,34 +229,6 @@ export default function AuthPage() {
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "signup" && (
             <>
-              {/* Avatar color picker */}
-              <div className="flex justify-center gap-2 mb-2">
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-black shadow-lg mr-3"
-                  style={{
-                    backgroundColor: avatarColor,
-                    color: avatarColor === "#6b7280" ? "#ffffff" : "#ffffff",
-                  }}
-                >
-                  {displayName ? displayName.charAt(0).toUpperCase() : "?"}
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {AVATAR_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setAvatarColor(color)}
-                      className={`w-6 h-6 rounded-full transition-all ${
-                        avatarColor === color
-                          ? "ring-2 ring-gray-400 ring-offset-2 scale-110"
-                          : "opacity-60 hover:opacity-100"
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-
               <div>
                 <label className="block text-gray-400 text-xs uppercase tracking-wider mb-1.5">Username</label>
                 <input

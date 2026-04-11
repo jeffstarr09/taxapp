@@ -18,61 +18,117 @@ interface TutorialProps {
   onComplete: () => void;
 }
 
-const STEPS = [
+interface Step {
+  title: string;
+  subtitle: string;
+  bullets: { label: string; detail: string }[];
+}
+
+const STEPS: Step[] = [
   {
     title: "Welcome to DROP",
-    subtitle: "AI-powered workout counter",
-    content:
-      "DROP uses your camera and AI pose detection to count your reps and grade your form in real time. No wearables needed.",
-    icon: (
-      <svg className="w-10 h-10 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-      </svg>
-    ),
+    subtitle: "AI-powered pushup counter",
+    bullets: [
+      {
+        label: "Counts every rep automatically",
+        detail:
+          "Your phone's camera + on-device AI track your body and count reps in real time. No wearables, no taps.",
+      },
+      {
+        label: "Grades your form",
+        detail:
+          "Every rep is scored on elbow depth and body alignment, so you know if you're going all the way down.",
+      },
+      {
+        label: "Nothing leaves your phone",
+        detail:
+          "Pose detection runs locally in your browser. Video never uploads — only your final rep count and form score.",
+      },
+    ],
   },
   {
-    title: "Camera Setup",
-    subtitle: "This is the key to accuracy",
-    content:
-      "Place your phone 4–8 feet away at a side angle. The AI needs to see your full body from head to toe. Lean the phone against something stable.",
-    icon: (
-      <svg className="w-10 h-10 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-      </svg>
-    ),
+    title: "Set up your phone",
+    subtitle: "Side angle, full body visible",
+    bullets: [
+      {
+        label: "Lean the phone against something stable",
+        detail:
+          "A water bottle, a shoe, or a stack of books works. It needs to stay put while you move.",
+      },
+      {
+        label: "4 to 8 feet away, at a side angle",
+        detail:
+          "Turn the phone sideways so the camera sees your profile — head, shoulders, hips, and ankles all in frame.",
+      },
+      {
+        label: "Good lighting helps accuracy",
+        detail:
+          "Face a window or overhead lamp. Avoid shooting toward a bright window behind you.",
+      },
+    ],
   },
   {
-    title: "Position Guide",
-    subtitle: "We'll help you line up",
-    content:
-      "When the camera starts, you'll see a body outline showing where to position yourself. Once the AI detects your pose, the guide fades away and tracking begins automatically.",
-    icon: (
-      <svg className="w-10 h-10 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-      </svg>
-    ),
+    title: "Line up with the guide",
+    subtitle: "A body outline will appear",
+    bullets: [
+      {
+        label: "Match the cyan silhouette",
+        detail:
+          "When you start, a pushup outline appears on screen. Position yourself inside it in a plank.",
+      },
+      {
+        label: "Hold steady for a moment",
+        detail:
+          "Once the AI locks onto your full body and elbow angle, the guide fades away and counting begins.",
+      },
+      {
+        label: "Can't see your ankles? Move the phone back",
+        detail:
+          "The counter won't start until your whole body is in frame — that's how we block half-reps and knee pushups.",
+      },
+    ],
   },
   {
-    title: "During Your Workout",
-    subtitle: "Full range of motion matters",
-    content:
-      "Go all the way down (chest near floor) and all the way up (arms fully extended). The AI tracks your elbow angle and body alignment to count reps and score your form.",
-    icon: (
-      <svg className="w-10 h-10 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-      </svg>
-    ),
+    title: "Crush your set",
+    subtitle: "Full range of motion counts",
+    bullets: [
+      {
+        label: "Go all the way down",
+        detail:
+          "Chest near the floor, elbows past 90°. Half-reps don't count and they tank your form score.",
+      },
+      {
+        label: "Fully extend at the top",
+        detail:
+          "Lock out your arms between reps. That's how the counter knows one rep is finished and the next is starting.",
+      },
+      {
+        label: "Listen for the beep",
+        detail:
+          "You'll hear a sound and feel a haptic on every rep counted, plus a bigger cue every 10 reps.",
+      },
+    ],
   },
   {
-    title: "You're Ready",
-    subtitle: "Let's go",
-    content:
-      "Hit \"Drop\" to start your workout. Your rep count will appear in the corner of the camera view. When you're done, tap \"End\" to see your results and form grade.",
-    icon: (
-      <svg className="w-10 h-10 text-drop-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
-      </svg>
-    ),
+    title: "You're ready",
+    subtitle: "Tap Start Workout to begin",
+    bullets: [
+      {
+        label: "Your count and timer show in the corner",
+        detail:
+          "Stay focused on the workout — glance at the HUD only if you need to.",
+      },
+      {
+        label: "Tap End when you're done",
+        detail:
+          "You'll see your rep count, total time, average form score, and where you land on the leaderboard.",
+      },
+      {
+        label: "Compete with friends",
+        detail:
+          "Add friends from the Leaderboard tab and watch your rank climb as you keep logging workouts.",
+      },
+    ],
   },
 ];
 
@@ -96,52 +152,91 @@ export default function Tutorial({ onComplete }: TutorialProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="drop-card rounded-3xl p-8 max-w-md w-full text-center">
-        {/* Progress dots */}
-        <div className="flex justify-center gap-1.5 mb-8">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 rounded-full transition-all ${
-                i === step ? "w-6 bg-drop-500" : i < step ? "w-1.5 bg-drop-600" : "w-1.5 bg-neutral-700"
-              }`}
-            />
-          ))}
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-xl flex flex-col max-h-[92vh]">
+        {/* Workout setup illustration — same image used on the workout setup page */}
+        <div className="bg-[#f7f7f7] px-6 pt-8 pb-4">
+          <img
+            src="/workout-setup.png"
+            alt="Pushup position in phone"
+            className="w-full h-auto object-contain max-h-44 mx-auto"
+          />
         </div>
 
-        {/* Icon */}
-        <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 rounded-2xl bg-drop-600/10 flex items-center justify-center">
-            {current.icon}
+        {/* Scrollable content area so long bullet lists never get clipped */}
+        <div className="px-6 pt-5 pb-6 overflow-y-auto">
+          {/* Progress dots */}
+          <div className="flex justify-center gap-1.5 mb-5">
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1 rounded-full transition-all ${
+                  i === step
+                    ? "w-6 bg-[#e8450a]"
+                    : i < step
+                      ? "w-1.5 bg-[#e8450a]/40"
+                      : "w-1.5 bg-gray-200"
+                }`}
+              />
+            ))}
           </div>
-        </div>
 
-        {/* Content */}
-        <h2 className="text-2xl font-black text-white mb-1">{current.title}</h2>
-        <p className="text-drop-400 text-xs uppercase tracking-[0.2em] font-semibold mb-4">
-          {current.subtitle}
-        </p>
-        <p className="text-neutral-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
-          {current.content}
-        </p>
+          {/* Title */}
+          <p className="text-[#e8450a] text-[10px] uppercase tracking-[0.18em] font-bold text-center mb-1">
+            {current.subtitle}
+          </p>
+          <h2 className="text-2xl font-black text-gray-900 text-center mb-5">
+            {current.title}
+          </h2>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          {!isLast && (
+          {/* Bullet points — icon + label + detail */}
+          <ul className="space-y-3.5 mb-6">
+            {current.bullets.map((b, i) => (
+              <li key={i} className="flex gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#e8450a]/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-3.5 h-3.5 text-[#e8450a]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={3}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m4.5 12.75 6 6 9-13.5"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-900 text-sm leading-snug">
+                    {b.label}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-relaxed mt-0.5">
+                    {b.detail}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            {!isLast && (
+              <button
+                onClick={handleSkip}
+                className="flex-1 px-4 py-3 border border-gray-200 text-gray-500 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Skip
+              </button>
+            )}
             <button
-              onClick={handleSkip}
-              className="flex-1 px-4 py-3 border border-white/10 text-neutral-500 rounded-xl hover:bg-white/5 transition font-medium text-sm"
+              onClick={handleNext}
+              className={`${isLast ? "w-full" : "flex-1"} px-4 py-3 bg-[#e8450a] text-white rounded-xl hover:bg-[#d03e09] transition font-bold text-sm`}
             >
-              Skip
+              {isLast ? "Start Workout" : "Next"}
             </button>
-          )}
-          <button
-            onClick={handleNext}
-            className={`${isLast ? "w-full" : "flex-1"} px-4 py-3 bg-drop-600 text-white rounded-xl hover:bg-drop-700 transition font-bold text-sm`}
-          >
-            {isLast ? "Start Working Out" : "Next"}
-          </button>
+          </div>
         </div>
       </div>
     </div>
