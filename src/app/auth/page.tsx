@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
@@ -23,6 +23,13 @@ export default function AuthPage() {
   const [resetSent, setResetSent] = useState(false);
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Surface OAuth errors bounced back from /auth/callback
+  useEffect(() => {
+    const errParam = searchParams.get("error");
+    if (errParam) setError(errParam);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
