@@ -61,6 +61,10 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const pathname = usePathname();
 
+  // Hide bottom nav on blog routes — the blog has its own standalone layout
+  // so readers aren't pulled back into the app mid-read.
+  if (pathname?.startsWith("/blog")) return null;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200">
       <div className="max-w-lg mx-auto">

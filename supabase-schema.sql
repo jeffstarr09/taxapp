@@ -78,19 +78,44 @@ create policy "Users can remove own friendships"
 
 -- Function to handle new user signup → auto-create profile
 -- Supports both email/password signups and Google OAuth
--- Google provides: full_name, avatar_url (or picture)
+-- - Email signups pass username/display_name via raw_user_meta_data
+-- - Google provides: full_name (or name), avatar_url (or picture)
+-- Username is sanitized (lowercase, alphanumeric+underscore only) and
+-- collisions are resolved by appending a numeric suffix.
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  base_username text;
+  final_username text;
+  counter int := 0;
 begin
+  -- Generate a base username: prefer explicit, then email prefix (sanitized)
+  base_username := coalesce(
+    new.raw_user_meta_data->>'username',
+    regexp_replace(lower(split_part(new.email, '@', 1)), '[^a-z0-9_]', '', 'g')
+  );
+
+  -- Ensure minimum length of 3
+  if length(base_username) < 3 then
+    base_username := base_username || 'user';
+  end if;
+
+  -- Find a unique username by appending numbers if needed
+  final_username := base_username;
+  while exists (select 1 from public.profiles where username = final_username) loop
+    counter := counter + 1;
+    final_username := base_username || counter::text;
+  end loop;
+
   insert into public.profiles (id, username, display_name, avatar_color, avatar_url)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+    final_username,
     coalesce(
       new.raw_user_meta_data->>'display_name',
       new.raw_user_meta_data->>'full_name',
       new.raw_user_meta_data->>'name',
-      split_part(new.email, '@', 1)
+      final_username
     ),
     coalesce(new.raw_user_meta_data->>'avatar_color', '#6366f1'),
     coalesce(
