@@ -329,6 +329,19 @@ export default function AuthPage() {
           </button>
         </form>
       </div>
+
+      {/* Legal links — required for Google OAuth verification */}
+      <p className="text-center text-xs text-gray-400 mt-6">
+        By continuing, you agree to our{" "}
+        <Link href="/terms" className="text-[#e8450a] hover:underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="text-[#e8450a] hover:underline">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </div>
   );
 }
