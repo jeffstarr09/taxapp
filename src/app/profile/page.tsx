@@ -13,16 +13,11 @@ import Avatar from "@/components/Avatar";
 import AvatarUpload from "@/components/AvatarUpload";
 import LegalFooter from "@/components/LegalFooter";
 
-const AVATAR_COLORS = [
-  "#dc2626", "#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899",
-];
-
 export default function ProfilePage() {
   const { profile, user, loading: authLoading, signOut, refreshProfile } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
   const [friends, setFriends] = useState<User[]>([]);
   const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
@@ -34,7 +29,6 @@ export default function ProfilePage() {
     if (authLoading || !profile) return;
     setUsername(profile.username);
     setDisplayName(profile.display_name);
-    setSelectedColor(profile.avatar_color);
 
     const loadData = async () => {
       const [w, f, lb] = await Promise.all([
@@ -58,7 +52,7 @@ export default function ProfilePage() {
     if (!trimmedName) { setError("Display name is required"); return; }
     if (!/^[a-z0-9_]+$/.test(trimmedUsername)) { setError("Lowercase letters, numbers, and underscores only"); return; }
     setSaving(true);
-    await updateProfile(profile.id, { username: trimmedUsername, display_name: trimmedName, avatar_color: selectedColor });
+    await updateProfile(profile.id, { username: trimmedUsername, display_name: trimmedName });
     await refreshProfile();
     setSaving(false);
     setError("");
@@ -284,7 +278,7 @@ export default function ProfilePage() {
               <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2">Profile Photo</label>
               <AvatarUpload
                 currentUrl={profile.avatar_url}
-                avatarColor={selectedColor}
+                avatarColor={profile.avatar_color}
                 displayName={displayName}
                 onCapture={async (dataUrl) => {
                   await updateProfile(profile.id, { avatar_url: dataUrl });
@@ -295,23 +289,6 @@ export default function ProfilePage() {
                   await refreshProfile();
                 }}
               />
-            </div>
-
-            {/* Avatar color (fallback when no photo) */}
-            <div>
-              <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2">Avatar Color</label>
-              <div className="flex gap-3">
-                {AVATAR_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`w-9 h-9 rounded-full transition-all ${
-                      selectedColor === color ? "ring-2 ring-offset-2 ring-gray-400 scale-110" : ""
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
             </div>
 
             {/* Username */}
