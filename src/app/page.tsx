@@ -12,6 +12,7 @@ import {
 } from "@/lib/achievements";
 import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
+import LegalFooter from "@/components/LegalFooter";
 
 function timeAgo(date: string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -128,6 +129,7 @@ export default function HomePage() {
             Create Account
           </Link>
         </div>
+        <LegalFooter />
       </div>
     );
   }
@@ -285,6 +287,8 @@ export default function HomePage() {
           </div>
         </>
       )}
+
+      <LegalFooter />
     </div>
   );
 }

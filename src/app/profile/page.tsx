@@ -11,6 +11,7 @@ import { User, WorkoutSession } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
 import Avatar from "@/components/Avatar";
 import AvatarUpload from "@/components/AvatarUpload";
+import LegalFooter from "@/components/LegalFooter";
 
 const AVATAR_COLORS = [
   "#dc2626", "#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899",
@@ -355,6 +356,8 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      <LegalFooter />
     </div>
   );
 }
