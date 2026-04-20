@@ -108,3 +108,11 @@ npm run lint     # ESLint
 - Cards use `drop-card` CSS class
 - No emojis in UI unless user requests them
 - Mobile-first design — tested primarily on iPhone
+
+## Parked Scope — "Project sit-up"
+
+Bigger product bets tabled pending more user traction. Do not build without explicit re-confirmation.
+
+1. **Points system** — unified cross-exercise score. Dual display (reps still hero metric, points as secondary). Proposed base values per rep: pushup=5, situp=2, squat=4, burpee=10, pullup=8, plank=2/10s. Form multiplier: `points = base × (form_score / 100)`. Compute client-side in `lib/points.ts` — no DB migration until values stabilize.
+2. **Situps as second exercise type** — new `situp-analyzer.ts`, exercise picker on `/workout` setup, `public/situp-guide.png`, full-body readiness check. `workouts.exercise_type` column already supports it.
+3. **Challenges feature** — user-created time-boxed contests. Types: volume-over-time, consistency-streak, race-to-goal, daily-target. One table with a `rule_type` discriminator. Personal trainer monetization angle parked until organic trainer demand appears.

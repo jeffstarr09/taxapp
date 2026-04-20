@@ -1,5 +1,7 @@
 export type ExerciseType = "pushup" | "pullup" | "squat" | "situp";
 
+export type LeaderboardPeriod = "today" | "week" | "month" | "all";
+
 export interface User {
   id: string;
   username: string;
