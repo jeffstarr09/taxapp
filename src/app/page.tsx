@@ -12,6 +12,7 @@ import {
   Achievement,
 } from "@/lib/achievements";
 import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
+import { computeStreak, streakMessage, StreakInfo } from "@/lib/streaks";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
 import LegalFooter from "@/components/LegalFooter";
 
@@ -35,7 +36,8 @@ function getGreeting(): string {
 
 export default function HomePage() {
   const { profile, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState({ total: 0, sessions: 0, streak: 0 });
+  const [stats, setStats] = useState({ total: 0, sessions: 0 });
+  const [streakInfo, setStreakInfo] = useState<StreakInfo>({ count: 0, workedOutToday: false, isAtRisk: false });
   const [userRank, setUserRank] = useState<number | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
@@ -84,25 +86,8 @@ export default function HomePage() {
         setActivityFeed(feed);
 
         const total = userWorkouts.reduce((sum: number, w: WorkoutSession) => sum + w.count, 0);
-        let streak = 0;
-        if (userWorkouts.length > 0) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const workoutDates = new Set(
-            userWorkouts.map((w: WorkoutSession) => {
-              const d = new Date(w.date);
-              d.setHours(0, 0, 0, 0);
-              return d.getTime();
-            })
-          );
-          const day = new Date(today);
-          if (!workoutDates.has(day.getTime())) day.setDate(day.getDate() - 1);
-          while (workoutDates.has(day.getTime())) {
-            streak++;
-            day.setDate(day.getDate() - 1);
-          }
-        }
-        setStats({ total, sessions: userWorkouts.length, streak });
+        setStats({ total, sessions: userWorkouts.length });
+        setStreakInfo(computeStreak(userWorkouts));
 
         const challenge = getTodaysChallenge();
         setTodaysChallenge(challenge);
@@ -212,7 +197,7 @@ export default function HomePage() {
       </h1>
 
       {/* Streak gradient card */}
-      <div className="streak-gradient rounded-2xl p-5 mb-5 text-white flex items-center justify-between">
+      <div className={`rounded-2xl p-5 mb-5 text-white flex items-center justify-between ${streakInfo.isAtRisk ? "bg-gradient-to-r from-amber-600 to-orange-600" : "streak-gradient"}`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -221,13 +206,13 @@ export default function HomePage() {
           </div>
           <div>
             <p className="text-white/80 text-xs">Current Streak</p>
-            <p className="text-4xl font-black">{stats.streak}</p>
+            <p className="text-4xl font-black">{streakInfo.count}</p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-white/80 text-sm">Days</p>
           <p className="text-white/90 text-xs font-medium">
-            {stats.streak > 0 ? "Keep it going!" : "Start today!"}
+            {streakMessage(streakInfo)}
           </p>
         </div>
       </div>
