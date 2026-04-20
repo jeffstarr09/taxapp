@@ -1,6 +1,7 @@
-import { User, WorkoutSession, LeaderboardEntry, ExerciseType } from "@/types";
+import { User, WorkoutSession, LeaderboardEntry, ExerciseType, LeaderboardPeriod } from "@/types";
 import { createClient } from "@/lib/supabase";
 import { debugLog, debugError, debugWarn } from "@/lib/debug-log";
+import { periodStart } from "@/lib/period";
 
 function getSupabase() {
   return createClient();
@@ -140,7 +141,22 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
 export async function getLeaderboard(
   friendsOnly: boolean = false,
   currentUserId?: string,
-  exerciseType?: ExerciseType
+  exerciseType?: ExerciseType,
+  period: LeaderboardPeriod = "all"
+): Promise<LeaderboardEntry[]> {
+  // "all" uses the precomputed Supabase view for speed.
+  // Time-scoped periods aggregate the workouts table client-side so they
+  // stay accurate without a schema migration.
+  if (period === "all") {
+    return getLeaderboardAllTime(friendsOnly, currentUserId, exerciseType);
+  }
+  return getLeaderboardForPeriod(period, friendsOnly, currentUserId, exerciseType);
+}
+
+async function getLeaderboardAllTime(
+  friendsOnly: boolean,
+  currentUserId: string | undefined,
+  exerciseType: ExerciseType | undefined
 ): Promise<LeaderboardEntry[]> {
   let query = getSupabase()
     .from("leaderboard")
@@ -182,29 +198,165 @@ export async function getLeaderboard(
     entries = entries.filter((e) => e.totalReps > 0);
   }
 
-  // The leaderboard view may have been created before avatar_url was added
-  // to the profiles table, in which case row.avatar_url is missing. Batch-
-  // fetch the current avatar_url for every entry directly from profiles so
-  // photos show up on the leaderboard regardless of view age.
-  if (entries.length > 0) {
-    const ids = entries.map((e) => e.userId);
-    const { data: profileRows } = await getSupabase()
-      .from("profiles")
-      .select("id, avatar_url")
-      .in("id", ids);
-    if (profileRows) {
-      const urlMap = new Map<string, string | null>();
-      for (const p of profileRows as { id: string; avatar_url: string | null }[]) {
-        urlMap.set(p.id, p.avatar_url ?? null);
-      }
-      entries = entries.map((e) => ({
-        ...e,
-        avatarUrl: urlMap.get(e.userId) ?? e.avatarUrl,
-      }));
+  return await hydrateAvatars(entries);
+}
+
+async function getLeaderboardForPeriod(
+  period: LeaderboardPeriod,
+  friendsOnly: boolean,
+  currentUserId: string | undefined,
+  exerciseType: ExerciseType | undefined
+): Promise<LeaderboardEntry[]> {
+  const since = periodStart(period);
+  if (!since) return [];
+
+  let query = getSupabase()
+    .from("workouts")
+    .select("user_id, count, average_form_score, exercise_type, date")
+    .gte("date", since.toISOString());
+
+  if (exerciseType) {
+    query = query.eq("exercise_type", exerciseType);
+  }
+
+  // If we're in Friends mode, pre-filter on the server to avoid pulling
+  // the full global workout set into the client.
+  let friendScope: string[] | null = null;
+  if (friendsOnly && currentUserId) {
+    const friendIds = await getFriendIds(currentUserId);
+    friendScope = [currentUserId, ...friendIds];
+    query = query.in("user_id", friendScope);
+  }
+
+  const { data } = await query;
+  if (!data || data.length === 0) {
+    // In Friends mode we still want to render the current user / friends
+    // even when nobody has logged a workout this period — the page falls
+    // back to profile-only rows below.
+    if (friendsOnly && friendScope) {
+      return hydrateAvatars(await buildEmptyEntriesForUsers(friendScope));
+    }
+    return [];
+  }
+
+  // Aggregate per user.
+  type Agg = { totalReps: number; bestSession: number; formSum: number; workoutCount: number };
+  const byUser = new Map<string, Agg>();
+  for (const row of data as { user_id: string; count: number; average_form_score: number }[]) {
+    const prev = byUser.get(row.user_id) ?? {
+      totalReps: 0,
+      bestSession: 0,
+      formSum: 0,
+      workoutCount: 0,
+    };
+    prev.totalReps += row.count ?? 0;
+    prev.bestSession = Math.max(prev.bestSession, row.count ?? 0);
+    prev.formSum += row.average_form_score ?? 0;
+    prev.workoutCount += 1;
+    byUser.set(row.user_id, prev);
+  }
+
+  const userIds = Array.from(byUser.keys());
+  const { data: profiles } = await getSupabase()
+    .from("profiles")
+    .select("id, username, display_name, avatar_color, avatar_url")
+    .in("id", userIds);
+
+  const profileMap = new Map<
+    string,
+    { username: string; display_name: string; avatar_color: string; avatar_url: string | null }
+  >();
+  for (const p of (profiles ?? []) as {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_color: string;
+    avatar_url: string | null;
+  }[]) {
+    profileMap.set(p.id, p);
+  }
+
+  let entries: LeaderboardEntry[] = userIds
+    .map((uid) => {
+      const agg = byUser.get(uid)!;
+      const p = profileMap.get(uid);
+      return {
+        userId: uid,
+        username: p?.username ?? "unknown",
+        displayName: p?.display_name ?? "Unknown",
+        avatarColor: p?.avatar_color ?? "#6b7280",
+        avatarUrl: p?.avatar_url ?? null,
+        totalReps: agg.totalReps,
+        bestSession: agg.bestSession,
+        averageForm: agg.workoutCount > 0 ? Math.round(agg.formSum / agg.workoutCount) : 0,
+        workoutCount: agg.workoutCount,
+        streak: 0,
+      };
+    })
+    .filter((e) => e.totalReps > 0)
+    .sort((a, b) => b.totalReps - a.totalReps);
+
+  // In Friends mode, also surface friends who haven't logged this period
+  // so users still see their network ranked (just at the bottom with 0).
+  if (friendsOnly && friendScope) {
+    const present = new Set(entries.map((e) => e.userId));
+    const missing = friendScope.filter((id) => !present.has(id));
+    if (missing.length > 0) {
+      const empties = await buildEmptyEntriesForUsers(missing);
+      entries = [...entries, ...empties];
     }
   }
 
   return entries;
+}
+
+async function buildEmptyEntriesForUsers(userIds: string[]): Promise<LeaderboardEntry[]> {
+  if (userIds.length === 0) return [];
+  const { data } = await getSupabase()
+    .from("profiles")
+    .select("id, username, display_name, avatar_color, avatar_url")
+    .in("id", userIds);
+  if (!data) return [];
+  return (data as {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_color: string;
+    avatar_url: string | null;
+  }[]).map((p) => ({
+    userId: p.id,
+    username: p.username,
+    displayName: p.display_name,
+    avatarColor: p.avatar_color,
+    avatarUrl: p.avatar_url ?? null,
+    totalReps: 0,
+    bestSession: 0,
+    averageForm: 0,
+    workoutCount: 0,
+    streak: 0,
+  }));
+}
+
+async function hydrateAvatars(entries: LeaderboardEntry[]): Promise<LeaderboardEntry[]> {
+  // The leaderboard view may have been created before avatar_url was added
+  // to the profiles table, in which case row.avatar_url is missing. Batch-
+  // fetch the current avatar_url for every entry directly from profiles so
+  // photos show up on the leaderboard regardless of view age.
+  if (entries.length === 0) return entries;
+  const ids = entries.map((e) => e.userId);
+  const { data: profileRows } = await getSupabase()
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", ids);
+  if (!profileRows) return entries;
+  const urlMap = new Map<string, string | null>();
+  for (const p of profileRows as { id: string; avatar_url: string | null }[]) {
+    urlMap.set(p.id, p.avatar_url ?? null);
+  }
+  return entries.map((e) => ({
+    ...e,
+    avatarUrl: urlMap.get(e.userId) ?? e.avatarUrl,
+  }));
 }
 
 // ── Friends ────────────────────────────────────────────────────
