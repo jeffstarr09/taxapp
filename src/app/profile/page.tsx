@@ -8,6 +8,7 @@ import { getWorkouts, updateProfile, getFriends, getLeaderboard, removeFriend } 
 import { getUnlockedAchievements, ACHIEVEMENTS } from "@/lib/achievements";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 import { User, WorkoutSession } from "@/types";
+import { computeStreak } from "@/lib/streaks";
 import { getExerciseConfig } from "@/lib/exercise-config";
 import Avatar from "@/components/Avatar";
 import AvatarUpload from "@/components/AvatarUpload";
@@ -83,14 +84,7 @@ export default function ProfilePage() {
   const bestSession = workouts.reduce((max, w) => Math.max(max, w.count), 0);
   const totalDuration = workouts.reduce((sum, w) => sum + w.duration, 0);
 
-  let streak = 0;
-  if (workouts.length > 0) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const workoutDates = new Set(workouts.map((w) => { const d = new Date(w.date); d.setHours(0, 0, 0, 0); return d.getTime(); }));
-    const day = new Date(today);
-    if (!workoutDates.has(day.getTime())) day.setDate(day.getDate() - 1);
-    while (workoutDates.has(day.getTime())) { streak++; day.setDate(day.getDate() - 1); }
-  }
+  const { count: streak } = computeStreak(workouts);
 
   const challenge = getTodaysChallenge();
   const todayWorkouts = getTodaysWorkouts(workouts, profile.id);

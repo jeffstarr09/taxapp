@@ -4,6 +4,9 @@ import Navbar from "@/components/Navbar";
 import MainWrapper from "@/components/MainWrapper";
 import AnalyticsProvider from "@/components/AnalyticsProvider";
 import { AuthProvider } from "@/lib/auth-context";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import InstallPrompt from "@/components/InstallPrompt";
+import PrivateBrowsingBanner from "@/components/PrivateBrowsingBanner";
 
 const SITE_URL = "https://dropfit.app";
 
@@ -131,8 +134,11 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-[#f7f7f7] text-neutral-900">
         <AuthProvider>
           <AnalyticsProvider>
+            <PrivateBrowsingBanner />
             <MainWrapper>{children}</MainWrapper>
             <Navbar />
+            <InstallPrompt />
+            <ServiceWorkerRegistrar />
           </AnalyticsProvider>
         </AuthProvider>
       </body>

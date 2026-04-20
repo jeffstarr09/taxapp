@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getLeaderboard, getActivityFeed, getWorkouts } from "@/lib/storage";
+import { getLeaderboard, getActivityFeed, getWorkouts, saveWorkout } from "@/lib/storage";
+import { getPendingWorkout, clearPendingWorkout } from "@/lib/pending-workout";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 import {
   getNewAchievements,
@@ -11,6 +12,7 @@ import {
   Achievement,
 } from "@/lib/achievements";
 import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
+import { computeStreak, streakMessage, StreakInfo } from "@/lib/streaks";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
 import LegalFooter from "@/components/LegalFooter";
 
@@ -34,18 +36,45 @@ function getGreeting(): string {
 
 export default function HomePage() {
   const { profile, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState({ total: 0, sessions: 0, streak: 0 });
+  const [stats, setStats] = useState({ total: 0, sessions: 0 });
+  const [streakInfo, setStreakInfo] = useState<StreakInfo>({ count: 0, workedOutToday: false, isAtRisk: false });
   const [userRank, setUserRank] = useState<number | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
   const [todaysChallenge, setTodaysChallenge] = useState<ReturnType<typeof getTodaysChallenge> | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
 
+  const [pendingSaved, setPendingSaved] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
 
     const loadData = async () => {
       if (profile) {
+        // Check for a workout completed as a guest before sign-up.
+        // If one exists, save it now that we have auth, then clear it.
+        const pending = getPendingWorkout();
+        if (pending) {
+          try {
+            const { v4: uuidv4 } = await import("uuid");
+            await saveWorkout({
+              id: uuidv4(),
+              userId: profile.id,
+              exerciseType: pending.exerciseType,
+              count: pending.count,
+              duration: pending.duration,
+              averageFormScore: pending.avgForm,
+              timestamps: pending.timestamps,
+              date: pending.date,
+              verified: true,
+            });
+            setPendingSaved(true);
+          } catch {
+            // Silently fail — the workout was best-effort
+          }
+          clearPendingWorkout();
+        }
+
         const [leaderboard, feed, userWorkouts] = await Promise.all([
           getLeaderboard(false, undefined, "pushup"),
           getActivityFeed(profile.id),
@@ -57,25 +86,8 @@ export default function HomePage() {
         setActivityFeed(feed);
 
         const total = userWorkouts.reduce((sum: number, w: WorkoutSession) => sum + w.count, 0);
-        let streak = 0;
-        if (userWorkouts.length > 0) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const workoutDates = new Set(
-            userWorkouts.map((w: WorkoutSession) => {
-              const d = new Date(w.date);
-              d.setHours(0, 0, 0, 0);
-              return d.getTime();
-            })
-          );
-          const day = new Date(today);
-          if (!workoutDates.has(day.getTime())) day.setDate(day.getDate() - 1);
-          while (workoutDates.has(day.getTime())) {
-            streak++;
-            day.setDate(day.getDate() - 1);
-          }
-        }
-        setStats({ total, sessions: userWorkouts.length, streak });
+        setStats({ total, sessions: userWorkouts.length });
+        setStreakInfo(computeStreak(userWorkouts));
 
         const challenge = getTodaysChallenge();
         setTodaysChallenge(challenge);
@@ -137,6 +149,21 @@ export default function HomePage() {
   // Signed-in home
   return (
     <div className="max-w-lg mx-auto px-5 pt-8">
+      {/* Pending workout saved banner */}
+      {pendingSaved && (
+        <div className="mb-4 p-3 rounded-xl border border-green-500/20 bg-green-50 flex items-center gap-2">
+          <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+          <p className="text-green-700 text-sm font-medium">Your workout was saved to the leaderboard!</p>
+          <button onClick={() => setPendingSaved(false)} className="ml-auto text-green-400 hover:text-green-600">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Achievement toast */}
       {newAchievements.length > 0 && (
         <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
@@ -170,7 +197,7 @@ export default function HomePage() {
       </h1>
 
       {/* Streak gradient card */}
-      <div className="streak-gradient rounded-2xl p-5 mb-5 text-white flex items-center justify-between">
+      <div className={`rounded-2xl p-5 mb-5 text-white flex items-center justify-between ${streakInfo.isAtRisk ? "bg-gradient-to-r from-amber-600 to-orange-600" : "streak-gradient"}`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -179,13 +206,13 @@ export default function HomePage() {
           </div>
           <div>
             <p className="text-white/80 text-xs">Current Streak</p>
-            <p className="text-4xl font-black">{stats.streak}</p>
+            <p className="text-4xl font-black">{streakInfo.count}</p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-white/80 text-sm">Days</p>
           <p className="text-white/90 text-xs font-medium">
-            {stats.streak > 0 ? "Keep it going!" : "Start today!"}
+            {streakMessage(streakInfo)}
           </p>
         </div>
       </div>
