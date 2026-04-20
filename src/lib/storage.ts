@@ -105,8 +105,22 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
   const supabase = getSupabase();
 
   // Verify we have an authenticated session before attempting insert
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  let { data: { user }, error: authError } = await supabase.auth.getUser();
   debugLog("Auth check", { userId: user?.id, authError: authError?.message, workoutUserId: workout.userId });
+
+  // If auth check failed, try refreshing the session once (helps in private
+  // browsing where the session token may have been evicted).
+  if (!user || authError) {
+    debugWarn("Auth check failed, attempting session refresh");
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (!refreshError) {
+      const retry = await supabase.auth.getUser();
+      user = retry.data.user;
+      authError = retry.error;
+      debugLog("Post-refresh auth check", { userId: user?.id, authError: authError?.message });
+    }
+  }
+
   if (!user) {
     debugError("Not authenticated — no user from auth.getUser()");
     throw new Error("Not authenticated — sign in to save workouts");
@@ -117,7 +131,7 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
 
   const insertData = {
     id: workout.id,
-    user_id: user.id,  // Use auth user ID directly to match RLS policy
+    user_id: user.id,
     exercise_type: workout.exerciseType,
     count: workout.count,
     duration: workout.duration,

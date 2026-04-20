@@ -280,7 +280,7 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
           {saveError && !isGuest && !saving && (
             <div className="p-3 rounded-xl border border-drop-500/30 bg-drop-500/10 text-center">
               <p className="text-drop-400 text-sm font-medium mb-2">Workout could not be saved</p>
-              <p className="text-neutral-500 text-xs mb-3">Make sure you&apos;re signed in and have an internet connection.</p>
+              <p className="text-neutral-500 text-xs mb-3">This can happen in private/incognito mode. Try a regular browser window, or check your connection.</p>
               <button
                 onClick={onRetrySave}
                 className="px-4 py-1.5 bg-drop-600 text-white rounded-lg text-xs font-semibold hover:bg-drop-700 transition"
