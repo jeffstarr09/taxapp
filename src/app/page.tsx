@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getLeaderboard, getActivityFeed, getWorkouts } from "@/lib/storage";
+import { getLeaderboard, getActivityFeed, getWorkouts, saveWorkout } from "@/lib/storage";
+import { getPendingWorkout, clearPendingWorkout } from "@/lib/pending-workout";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 import {
   getNewAchievements,
@@ -41,11 +42,37 @@ export default function HomePage() {
   const [todaysChallenge, setTodaysChallenge] = useState<ReturnType<typeof getTodaysChallenge> | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
 
+  const [pendingSaved, setPendingSaved] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
 
     const loadData = async () => {
       if (profile) {
+        // Check for a workout completed as a guest before sign-up.
+        // If one exists, save it now that we have auth, then clear it.
+        const pending = getPendingWorkout();
+        if (pending) {
+          try {
+            const { v4: uuidv4 } = await import("uuid");
+            await saveWorkout({
+              id: uuidv4(),
+              userId: profile.id,
+              exerciseType: pending.exerciseType,
+              count: pending.count,
+              duration: pending.duration,
+              averageFormScore: pending.avgForm,
+              timestamps: pending.timestamps,
+              date: pending.date,
+              verified: true,
+            });
+            setPendingSaved(true);
+          } catch {
+            // Silently fail — the workout was best-effort
+          }
+          clearPendingWorkout();
+        }
+
         const [leaderboard, feed, userWorkouts] = await Promise.all([
           getLeaderboard(false, undefined, "pushup"),
           getActivityFeed(profile.id),
@@ -137,6 +164,21 @@ export default function HomePage() {
   // Signed-in home
   return (
     <div className="max-w-lg mx-auto px-5 pt-8">
+      {/* Pending workout saved banner */}
+      {pendingSaved && (
+        <div className="mb-4 p-3 rounded-xl border border-green-500/20 bg-green-50 flex items-center gap-2">
+          <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+          <p className="text-green-700 text-sm font-medium">Your workout was saved to the leaderboard!</p>
+          <button onClick={() => setPendingSaved(false)} className="ml-auto text-green-400 hover:text-green-600">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Achievement toast */}
       {newAchievements.length > 0 && (
         <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">

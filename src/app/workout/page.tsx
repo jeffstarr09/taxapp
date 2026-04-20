@@ -18,6 +18,7 @@ import {
   triggerHaptic,
   isMilestone,
 } from "@/lib/sounds";
+import { storePendingWorkout } from "@/lib/pending-workout";
 import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
 import { getActiveAnalyzerThresholds, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
 import { debugLog, debugError } from "@/lib/debug-log";
@@ -134,6 +135,8 @@ export default function WorkoutPage() {
     [sessionResult]
   );
 
+  const isGuest = !profile?.id;
+
   // Auto-save workout when session result is available
   useEffect(() => {
     debugLog("Save effect triggered", {
@@ -145,10 +148,9 @@ export default function WorkoutPage() {
       profileId: profile?.id,
     });
     if (!sessionResult || saved || saving) return;
-    // Cannot save without a signed-in user — Supabase RLS will reject it
+    // Guest users: don't try to save (handled by WorkoutSummary CTA)
     if (!profile?.id) {
-      debugError("No profile.id — cannot save workout", { profile });
-      setSaveError(true);
+      debugLog("Guest user — skipping auto-save, will prompt signup");
       return;
     }
 
@@ -274,6 +276,20 @@ export default function WorkoutPage() {
     }
   };
 
+  const handleSignUpToSave = () => {
+    if (sessionResult) {
+      storePendingWorkout({
+        count: sessionResult.count,
+        duration: sessionResult.duration,
+        avgForm: sessionResult.avgForm,
+        timestamps: sessionResult.timestamps,
+        exerciseType,
+        date: new Date().toISOString(),
+      });
+    }
+    window.location.href = "/auth";
+  };
+
   const handleCloseSummary = () => {
     setShowSummary(false);
     setSessionResult(null);
@@ -373,6 +389,8 @@ export default function WorkoutPage() {
       saved={saved}
       saving={saving}
       saveError={saveError}
+      isGuest={isGuest}
+      onSignUp={handleSignUpToSave}
       onRetrySave={handleRetrySave}
       onFeedback={handleFeedback}
     />,

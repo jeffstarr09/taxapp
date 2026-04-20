@@ -15,6 +15,8 @@ interface WorkoutSummaryProps {
   saved: boolean;
   saving?: boolean;
   saveError?: boolean;
+  isGuest?: boolean;
+  onSignUp?: () => void;
   onRetrySave?: () => void;
   onFeedback?: (feedback: {
     rating: "accurate" | "overcounted" | "undercounted";
@@ -41,7 +43,7 @@ function getShareText(count: number, grade: string, exerciseLabel: string): stri
   return `I just dropped ${count} ${exerciseLabel.toLowerCase()} and scored ${grade} form on DROP — the AI workout counter. Think you can beat that?`;
 }
 
-export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, onRetrySave, onFeedback, todaysWorkoutCounts }: WorkoutSummaryProps) {
+export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, isGuest, onSignUp, onRetrySave, onFeedback, todaysWorkoutCounts }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const [shared, setShared] = useState(false);
@@ -263,7 +265,19 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
               </p>
             </div>
           )}
-          {saveError && !saving && (
+          {isGuest && !saved && !saving && (
+            <div className="p-4 rounded-xl border border-[#e8450a]/30 bg-[#e8450a]/10 text-center">
+              <p className="text-white text-sm font-bold mb-1">Great set!</p>
+              <p className="text-neutral-400 text-xs mb-3">Create a free account to save this workout, track your progress, and compete on the leaderboard.</p>
+              <button
+                onClick={onSignUp}
+                className="w-full px-4 py-2.5 bg-[#e8450a] text-white rounded-xl text-sm font-bold hover:bg-[#d03e09] transition"
+              >
+                Create Account to Save
+              </button>
+            </div>
+          )}
+          {saveError && !isGuest && !saving && (
             <div className="p-3 rounded-xl border border-drop-500/30 bg-drop-500/10 text-center">
               <p className="text-drop-400 text-sm font-medium mb-2">Workout could not be saved</p>
               <p className="text-neutral-500 text-xs mb-3">Make sure you&apos;re signed in and have an internet connection.</p>
