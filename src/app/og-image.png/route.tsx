@@ -2,7 +2,10 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { origin } = new URL(request.url);
+  const logoSrc = `${origin}/drop-logo.png`;
+
   return new ImageResponse(
     (
       <div
@@ -13,60 +16,71 @@ export async function GET() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#ffffff",
+          background: "linear-gradient(145deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)",
           fontFamily: "system-ui, sans-serif",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Subtle radial glow behind logo */}
         <div
           style={{
+            position: "absolute",
+            width: 600,
+            height: 600,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(232,69,10,0.15) 0%, transparent 70%)",
+            top: -60,
             display: "flex",
-            fontSize: 180,
-            fontWeight: 900,
-            letterSpacing: "-0.05em",
-            marginBottom: 20,
-          }}
-        >
-          <span style={{ color: "#111111" }}>DR</span>
-          <span style={{ color: "#e8450a" }}>O</span>
-          <span style={{ color: "#111111" }}>P</span>
-        </div>
-        <div
-          style={{
-            width: 140,
-            height: 4,
-            background: "#e8450a",
-            borderRadius: 4,
-            marginBottom: 40,
           }}
         />
+
+        {/* Logo */}
+        <img
+          src={logoSrc}
+          width={240}
+          height={240}
+          style={{ marginBottom: 24 }}
+        />
+
+        {/* CTA tagline */}
         <div
           style={{
-            color: "#111111",
-            fontSize: 44,
+            color: "#ffffff",
+            fontSize: 52,
             fontWeight: 700,
             textAlign: "center",
-            maxWidth: 900,
-            marginBottom: 20,
+            letterSpacing: "-0.02em",
+            marginBottom: 16,
           }}
         >
-          AI-Powered Pushup Counter
+          Climb the Leaderboard
         </div>
+
+        {/* Subtitle */}
         <div
           style={{
-            display: "flex",
-            gap: 40,
-            marginTop: 30,
-            color: "#6b7280",
-            fontSize: 26,
+            color: "#a3a3a3",
+            fontSize: 28,
             fontWeight: 500,
+            textAlign: "center",
           }}
         >
-          <span>Real-time Form Tracking</span>
-          <span style={{ color: "#e8450a" }}>•</span>
-          <span>Leaderboards</span>
-          <span style={{ color: "#e8450a" }}>•</span>
-          <span>Daily Challenges</span>
+          AI counts your reps. You bring the effort.
         </div>
+
+        {/* Bottom bar */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 6,
+            background: "linear-gradient(90deg, #e8450a, #dc2626)",
+            display: "flex",
+          }}
+        />
       </div>
     ),
     {

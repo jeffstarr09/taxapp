@@ -120,9 +120,11 @@ export default function HomePage() {
     return (
       <div className="max-w-lg mx-auto px-5 py-12">
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black tracking-tight text-gray-900 mb-2">
-            DR<span className="text-[#e8450a]">O</span>P
-          </h1>
+          <img
+            src="/drop-logo.png"
+            alt="DROP"
+            className="w-32 h-32 mx-auto mb-3 object-contain"
+          />
           <p className="text-gray-500 text-base">
             AI-powered pushup counter. Compete with friends.
           </p>

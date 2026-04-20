@@ -46,9 +46,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "DROP — AI Pushup Counter & Workout Tracker",
+    title: "DROP — Climb the Leaderboard",
     description:
-      "AI-powered pushup counter that verifies every rep. Real-time form tracking, leaderboards, and daily challenges. Free to try.",
+      "AI counts your reps. You bring the effort. Free pushup counter with real-time form tracking and weekly competitions.",
     siteName: "DROP",
     images: [
       {
@@ -61,9 +61,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DROP — AI Pushup Counter & Workout Tracker",
+    title: "DROP — Climb the Leaderboard",
     description:
-      "AI-powered pushup counter that verifies every rep. Real-time form tracking, leaderboards, and daily challenges.",
+      "AI counts your reps. You bring the effort. Free pushup counter with real-time form tracking and weekly competitions.",
     images: ["/og-image.png"],
   },
   appleWebApp: {

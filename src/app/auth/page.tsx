@@ -156,11 +156,11 @@ export default function AuthPage() {
     <div className="max-w-md mx-auto px-4 py-12">
       <div className="text-center mb-8">
         <Link href="/">
-          <h1 className="text-4xl font-black tracking-tighter mb-2">
-            <span className="text-gray-900">DR</span>
-            <span className="text-[#e8450a]">O</span>
-            <span className="text-gray-900">P</span>
-          </h1>
+          <img
+            src="/drop-logo.png"
+            alt="DROP"
+            className="w-24 h-24 mx-auto mb-2 object-contain"
+          />
         </Link>
         <p className="text-gray-500 text-sm">
           {mode === "signup" ? "Create your account" : mode === "login" ? "Welcome back" : "Reset your password"}
