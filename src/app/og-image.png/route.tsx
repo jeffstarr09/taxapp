@@ -2,7 +2,10 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { origin } = new URL(request.url);
+  const logoSrc = `${origin}/drop-logo.png`;
+
   return new ImageResponse(
     (
       <div
@@ -27,44 +30,24 @@ export async function GET() {
             height: 600,
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(232,69,10,0.15) 0%, transparent 70%)",
-            top: -100,
+            top: -60,
             display: "flex",
           }}
         />
 
-        {/* DROP wordmark */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 160,
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            marginBottom: 16,
-            lineHeight: 1,
-          }}
-        >
-          <span style={{ color: "#ffffff" }}>DR</span>
-          <span style={{ color: "#e8450a" }}>O</span>
-          <span style={{ color: "#ffffff" }}>P</span>
-        </div>
-
-        {/* Accent line */}
-        <div
-          style={{
-            width: 80,
-            height: 4,
-            background: "#e8450a",
-            borderRadius: 4,
-            marginBottom: 32,
-            display: "flex",
-          }}
+        {/* Logo */}
+        <img
+          src={logoSrc}
+          width={240}
+          height={240}
+          style={{ marginBottom: 24 }}
         />
 
         {/* CTA tagline */}
         <div
           style={{
             color: "#ffffff",
-            fontSize: 48,
+            fontSize: 52,
             fontWeight: 700,
             textAlign: "center",
             letterSpacing: "-0.02em",
