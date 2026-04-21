@@ -13,6 +13,8 @@ import {
 } from "@/lib/achievements";
 import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
 import { computeStreak, streakMessage, StreakInfo } from "@/lib/streaks";
+import { totalCalories } from "@/lib/calories";
+import { getCurrentMonthlyChallenge, getMonthlyChallengeProgress, MonthlyChallengeProgress } from "@/lib/monthly-challenge";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
 import LegalFooter from "@/components/LegalFooter";
 
@@ -36,12 +38,13 @@ function getGreeting(): string {
 
 export default function HomePage() {
   const { profile, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState({ total: 0, sessions: 0 });
+  const [stats, setStats] = useState({ total: 0, sessions: 0, calories: 0 });
   const [streakInfo, setStreakInfo] = useState<StreakInfo>({ count: 0, workedOutToday: false, isAtRisk: false });
   const [userRank, setUserRank] = useState<number | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
   const [todaysChallenge, setTodaysChallenge] = useState<ReturnType<typeof getTodaysChallenge> | null>(null);
+  const [monthlyProgress, setMonthlyProgress] = useState<MonthlyChallengeProgress | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
 
   const [pendingSaved, setPendingSaved] = useState(false);
@@ -86,8 +89,12 @@ export default function HomePage() {
         setActivityFeed(feed);
 
         const total = userWorkouts.reduce((sum: number, w: WorkoutSession) => sum + w.count, 0);
-        setStats({ total, sessions: userWorkouts.length });
+        const calories = totalCalories(userWorkouts);
+        setStats({ total, sessions: userWorkouts.length, calories });
         setStreakInfo(computeStreak(userWorkouts));
+
+        const monthlyChallenge = getCurrentMonthlyChallenge();
+        setMonthlyProgress(getMonthlyChallengeProgress(monthlyChallenge, userWorkouts));
 
         const challenge = getTodaysChallenge();
         setTodaysChallenge(challenge);
@@ -223,10 +230,11 @@ export default function HomePage() {
       <div className="grid grid-cols-3 gap-2 mb-6">
         <div className="drop-card p-4 text-center">
           <svg className="w-5 h-5 text-[#e8450a] mx-auto mb-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z" />
           </svg>
-          <p className="text-2xl font-black text-gray-900">{stats.total.toLocaleString()}</p>
-          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Total Reps</p>
+          <p className="text-2xl font-black text-gray-900">{Math.round(stats.calories).toLocaleString()}</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Calories</p>
         </div>
         <div className="drop-card p-4 text-center">
           <svg className="w-5 h-5 text-[#e8450a] mx-auto mb-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -277,6 +285,55 @@ export default function HomePage() {
             {challengeProgress.completed && (
               <p className="text-green-600 text-xs font-medium text-center mt-2">Challenge complete!</p>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Monthly Challenge + Reward */}
+      {monthlyProgress && (
+        <>
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            Monthly Challenge
+          </h2>
+          <div className="drop-card p-5 mb-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex-1">
+                <p className="font-bold text-gray-900">{getCurrentMonthlyChallenge().title}</p>
+                <p className="text-gray-400 text-sm">Burn {monthlyProgress.targetCalories.toLocaleString()} calories to earn a reward</p>
+              </div>
+              <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-lg shrink-0">
+                {monthlyProgress.daysLeft}d left
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-gray-400">Progress</span>
+              <span className="font-bold text-gray-900">
+                {Math.round(monthlyProgress.currentCalories).toLocaleString()} / {monthlyProgress.targetCalories.toLocaleString()} cal
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+              <div
+                className={`h-full rounded-full transition-all ${monthlyProgress.completed ? "bg-green-500" : "bg-[#e8450a]"}`}
+                style={{ width: `${monthlyProgress.percent}%` }}
+              />
+            </div>
+
+            {/* Reward card */}
+            <div className={`rounded-xl border p-4 flex items-center gap-4 ${monthlyProgress.completed ? "border-green-500/30 bg-green-50" : "border-gray-100 bg-gray-50"}`}>
+              <img
+                src={getCurrentMonthlyChallenge().reward.imageUrl}
+                alt={getCurrentMonthlyChallenge().reward.name}
+                className="w-16 h-16 rounded-lg object-contain shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">{getCurrentMonthlyChallenge().reward.brand}</p>
+                <p className="text-sm font-bold text-gray-900 leading-tight">{getCurrentMonthlyChallenge().reward.name}</p>
+                <p className="text-xs text-[#e8450a] font-semibold mt-0.5">Value: {getCurrentMonthlyChallenge().reward.value}</p>
+              </div>
+              {monthlyProgress.completed && (
+                <span className="text-green-500 text-xs font-bold shrink-0">Earned!</span>
+              )}
+            </div>
           </div>
         </>
       )}
