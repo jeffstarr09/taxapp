@@ -123,7 +123,7 @@ export default function HomePage() {
           <img
             src="/drop-logo.png"
             alt="DROP"
-            className="w-32 h-32 mx-auto mb-3 object-contain"
+            className="w-40 mx-auto mb-3 object-contain mix-blend-multiply"
           />
           <p className="text-gray-500 text-base">
             AI-powered pushup counter. Compete with friends.
