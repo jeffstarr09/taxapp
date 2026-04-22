@@ -10,6 +10,7 @@ export interface ExerciseConfig {
   cameraAngle: string;
   setupImage: string;
   guideImage: string;
+  guideRotatePortrait: boolean;
   available: boolean; // false = coming soon
 }
 
@@ -28,7 +29,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
     ],
     cameraAngle: "Side view — full body in frame",
     setupImage: "/workout-setup.png",
-    guideImage: "/pushup-guide.png",
+    guideImage: "/pushupoverlay.png",
+    guideRotatePortrait: true,
     available: true,
   },
   pullup: {
@@ -45,7 +47,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
     ],
     cameraAngle: "Front or side view — full body in frame",
     setupImage: "/workout-setup.png",
-    guideImage: "/pushup-guide.png",
+    guideImage: "/pushupoverlay.png",
+    guideRotatePortrait: false,
     available: false,
   },
   squat: {
@@ -62,7 +65,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
     ],
     cameraAngle: "Side view — full body in frame",
     setupImage: "/squat.png",
-    guideImage: "/squat.png",
+    guideImage: "/squatoverlay.png",
+    guideRotatePortrait: false,
     available: true,
   },
   situp: {
@@ -79,7 +83,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
     ],
     cameraAngle: "Side view — full body in frame",
     setupImage: "/situp.png",
-    guideImage: "/situp.png",
+    guideImage: "/situpoverlay.png",
+    guideRotatePortrait: true,
     available: true,
   },
 };
