@@ -280,20 +280,24 @@ export default function CameraView({ isActive, exerciseType = "pushup", onUpdate
         className="absolute inset-0 w-full h-full"
         style={{ transform: "scaleX(-1)" }}
       />
-      {/* Position guide overlay — counter-rotates so image always looks the same */}
-      {showGuide && !loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 overflow-hidden">
-          <img
-            src={getExerciseConfig(exerciseType).guideImage}
-            alt={`Align with the guide to start tracking ${getExerciseConfig(exerciseType).labelPlural.toLowerCase()}`}
-            style={
-              isLandscape
-                ? { width: "100%", height: "auto", flexShrink: 0 }
-                : { transform: "rotate(90deg)", width: "100vh", height: "auto", flexShrink: 0 }
-            }
-          />
-        </div>
-      )}
+      {/* Position guide overlay */}
+      {showGuide && !loading && (() => {
+        const config = getExerciseConfig(exerciseType);
+        const needsRotate = config.guideRotatePortrait && !isLandscape;
+        return (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 overflow-hidden">
+            <img
+              src={config.guideImage}
+              alt={`Align with the guide to start tracking ${config.labelPlural.toLowerCase()}`}
+              style={
+                needsRotate
+                  ? { transform: "rotate(90deg)", width: "100vh", height: "auto", flexShrink: 0 }
+                  : { width: "100%", height: "auto", flexShrink: 0 }
+              }
+            />
+          </div>
+        );
+      })()}
       {/* Rep counter overlay — only shown in non-fullscreen mode (fullscreen has its own HUD) */}
       {!loading && !fullscreen && (
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
