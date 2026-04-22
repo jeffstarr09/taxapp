@@ -321,6 +321,7 @@ export default function WorkoutPage() {
       {/* Camera fills entire screen */}
       <CameraView
         isActive={isActive}
+        exerciseType={exerciseType}
         onUpdate={handleUpdate}
         onSessionEnd={handleSessionEnd}
         fullscreen
@@ -413,53 +414,44 @@ export default function WorkoutPage() {
         Back
       </button>
 
+      {/* Exercise picker */}
+      {availableExercises.length > 1 && (
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+          {availableExercises.map((ex) => (
+            <button
+              key={ex.type}
+              onClick={() => setExerciseType(ex.type)}
+              className={`flex-1 min-w-0 py-3 px-4 rounded-xl text-sm font-bold transition border ${
+                exerciseType === ex.type
+                  ? "bg-[#e8450a] text-white border-[#e8450a]"
+                  : "bg-white text-gray-600 border-gray-200"
+              }`}
+            >
+              {ex.labelPlural}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Workout setup illustration */}
       <div className="rounded-2xl mb-8 overflow-hidden">
         <img
           src="/workout-setup.png"
-          alt="Pushup position guide — phone showing proper form"
+          alt={`${exerciseConfig.label} position guide`}
           className="w-full h-auto object-contain"
         />
       </div>
 
-      {/* Setup steps — vertical list */}
+      {/* Setup tips — dynamic per exercise */}
       <div className="space-y-5 mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
-            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-            </svg>
+        {exerciseConfig.setupTips.map((tip, i) => (
+          <div key={i} className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
+              <span className="text-[#e8450a] font-bold text-lg">{i + 1}</span>
+            </div>
+            <p className="font-medium text-gray-700">{tip}</p>
           </div>
-          <div>
-            <p className="font-bold text-gray-900">Get your phone into position</p>
-            <p className="text-gray-400 text-sm">Secure it at a stable angle</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
-            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-bold text-gray-900">Side angle</p>
-            <p className="text-gray-400 text-sm">Camera sees full body</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#e8450a]/10 rounded-xl flex items-center justify-center shrink-0">
-            <svg className="w-6 h-6 text-[#e8450a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-bold text-gray-900">Good lighting</p>
-            <p className="text-gray-400 text-sm">Face a window or lamp</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Start button */}

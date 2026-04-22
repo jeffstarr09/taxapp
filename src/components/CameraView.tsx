@@ -3,10 +3,13 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { detectPose, initPoseDetector } from "@/lib/pose-detection";
 import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps, isAnalyzerReady } from "@/lib/pushup-analyzer";
-import { PoseKeypoint, ExerciseState } from "@/types";
+import { analyzeSitup, resetSitupAnalyzer, getSitupAverageFormScore, getSitupRepTimestamps, isSitupAnalyzerReady } from "@/lib/situp-analyzer";
+import { analyzeSquat, resetSquatAnalyzer, getSquatAverageFormScore, getSquatRepTimestamps, isSquatAnalyzerReady } from "@/lib/squat-analyzer";
+import { PoseKeypoint, ExerciseState, ExerciseType } from "@/types";
 
 interface CameraViewProps {
   isActive: boolean;
+  exerciseType?: ExerciseType;
   onUpdate: (state: ExerciseState) => void;
   onSessionEnd: (count: number, duration: number, avgForm: number, timestamps: number[]) => void;
   fullscreen?: boolean;
@@ -27,7 +30,7 @@ const SKELETON_CONNECTIONS: [string, string][] = [
   ["right_knee", "right_ankle"],
 ];
 
-export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscreen }: CameraViewProps) {
+export default function CameraView({ isActive, exerciseType = "pushup", onUpdate, onSessionEnd, fullscreen }: CameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
@@ -109,12 +112,22 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
       const keypoints = await detectPose(videoRef.current);
       if (keypoints.length > 0 && canvasRef.current) {
         drawKeypoints(keypoints, canvasRef.current);
-        const pushupState = analyzePushup(keypoints);
-        onUpdate(pushupState);
-        lastCountRef.current = pushupState.count;
-        setDisplayCount(pushupState.count);
-        // Hide guide only when analyzer confirms full body in position
-        if (showGuide && isAnalyzerReady()) {
+        let exerciseState: ExerciseState;
+        let ready: boolean;
+        if (exerciseType === "situp") {
+          exerciseState = analyzeSitup(keypoints);
+          ready = isSitupAnalyzerReady();
+        } else if (exerciseType === "squat") {
+          exerciseState = analyzeSquat(keypoints);
+          ready = isSquatAnalyzerReady();
+        } else {
+          exerciseState = analyzePushup(keypoints);
+          ready = isAnalyzerReady();
+        }
+        onUpdate(exerciseState);
+        lastCountRef.current = exerciseState.count;
+        setDisplayCount(exerciseState.count);
+        if (showGuide && ready) {
           setShowGuide(false);
         }
       }
@@ -159,7 +172,13 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
       await initPoseDetector();
       setLoading(false);
       startTimeRef.current = Date.now();
-      resetAnalyzer();
+      if (exerciseType === "situp") {
+        resetSitupAnalyzer();
+      } else if (exerciseType === "squat") {
+        resetSquatAnalyzer();
+      } else {
+        resetAnalyzer();
+      }
       lastCountRef.current = 0;
     } catch (err) {
       setError(
@@ -194,12 +213,19 @@ export default function CameraView({ isActive, onUpdate, onSessionEnd, fullscree
         ? Math.round((Date.now() - startTimeRef.current) / 1000)
         : 0;
       if (lastCountRef.current > 0) {
-        onSessionEnd(
-          lastCountRef.current,
-          duration,
-          getAverageFormScore(),
-          getRepTimestamps()
-        );
+        let avgForm: number;
+        let timestamps: number[];
+        if (exerciseType === "situp") {
+          avgForm = getSitupAverageFormScore();
+          timestamps = getSitupRepTimestamps();
+        } else if (exerciseType === "squat") {
+          avgForm = getSquatAverageFormScore();
+          timestamps = getSquatRepTimestamps();
+        } else {
+          avgForm = getAverageFormScore();
+          timestamps = getRepTimestamps();
+        }
+        onSessionEnd(lastCountRef.current, duration, avgForm, timestamps);
       }
       stopCamera();
     }

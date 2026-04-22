@@ -159,7 +159,7 @@ export default function AuthPage() {
           <img
             src="/drop-logo.png"
             alt="DROP"
-            className="w-24 h-24 mx-auto mb-2 object-contain"
+            className="w-32 mx-auto mb-2 object-contain mix-blend-multiply"
           />
         </Link>
         <p className="text-gray-500 text-sm">

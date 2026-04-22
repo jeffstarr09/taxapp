@@ -10,6 +10,7 @@ import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/l
 import { User, WorkoutSession } from "@/types";
 import { computeStreak } from "@/lib/streaks";
 import { getExerciseConfig } from "@/lib/exercise-config";
+import { totalCalories, caloriesForReps } from "@/lib/calories";
 import Avatar from "@/components/Avatar";
 import AvatarUpload from "@/components/AvatarUpload";
 import LegalFooter from "@/components/LegalFooter";
@@ -83,8 +84,22 @@ export default function ProfilePage() {
   const avgForm = workouts.length > 0 ? Math.round(workouts.reduce((sum, w) => sum + w.averageFormScore, 0) / workouts.length) : 0;
   const bestSession = workouts.reduce((max, w) => Math.max(max, w.count), 0);
   const totalDuration = workouts.reduce((sum, w) => sum + w.duration, 0);
+  const calories = totalCalories(workouts);
 
   const { count: streak } = computeStreak(workouts);
+
+  // Per-exercise breakdown
+  const exerciseBreakdown = (["pushup", "situp", "squat"] as const).map((type) => {
+    const exWorkouts = workouts.filter((w) => w.exerciseType === type);
+    const config = getExerciseConfig(type);
+    return {
+      type,
+      label: config.labelPlural,
+      reps: exWorkouts.reduce((sum, w) => sum + w.count, 0),
+      sessions: exWorkouts.length,
+      calories: totalCalories(exWorkouts),
+    };
+  }).filter((e) => e.reps > 0);
 
   const challenge = getTodaysChallenge();
   const todayWorkouts = getTodaysWorkouts(workouts, profile.id);
@@ -116,35 +131,58 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Stats grid — 2x3 */}
-      <div className="grid grid-cols-2 gap-2 mb-6">
-        <div className="drop-card p-4">
-          <p className="text-3xl font-black text-gray-900">{totalReps.toLocaleString()}</p>
-          <p className="text-gray-400 text-xs uppercase tracking-wider">Total Reps</p>
+      {/* Stats grid */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="drop-card p-4 text-center">
+          <p className="text-2xl font-black text-[#e8450a]">{Math.round(calories).toLocaleString()}</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Calories</p>
         </div>
-        <div className="drop-card p-4">
-          <p className="text-3xl font-black text-gray-900">{workouts.length}</p>
-          <p className="text-gray-400 text-xs uppercase tracking-wider">Workouts</p>
+        <div className="drop-card p-4 text-center">
+          <p className="text-2xl font-black text-gray-900">{totalReps.toLocaleString()}</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Total Reps</p>
         </div>
-        <div className="drop-card p-4">
-          <p className="text-3xl font-black text-gray-900">{bestSession}</p>
-          <p className="text-gray-400 text-xs uppercase tracking-wider">Best Set</p>
-        </div>
-        <div className="drop-card p-4">
-          <p className="text-3xl font-black text-gray-900">{avgForm}%</p>
-          <p className="text-gray-400 text-xs uppercase tracking-wider">Avg Form</p>
-        </div>
-        <div className="drop-card p-4">
-          <p className="text-3xl font-black text-[#e8450a]">{streak}</p>
-          <p className="text-gray-400 text-xs uppercase tracking-wider">Day Streak</p>
-        </div>
-        <div className="drop-card p-4">
-          <p className="text-3xl font-black text-gray-900">
-            {totalDuration >= 3600 ? `${Math.floor(totalDuration / 3600)}h` : `${Math.floor(totalDuration / 60)}m`}
-          </p>
-          <p className="text-gray-400 text-xs uppercase tracking-wider">Total Time</p>
+        <div className="drop-card p-4 text-center">
+          <p className="text-2xl font-black text-gray-900">{streak}</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Day Streak</p>
         </div>
       </div>
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        <div className="drop-card p-4 text-center">
+          <p className="text-2xl font-black text-gray-900">{workouts.length}</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Workouts</p>
+        </div>
+        <div className="drop-card p-4 text-center">
+          <p className="text-2xl font-black text-gray-900">{avgForm}%</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Avg Form</p>
+        </div>
+        <div className="drop-card p-4 text-center">
+          <p className="text-2xl font-black text-gray-900">
+            {totalDuration >= 3600 ? `${Math.floor(totalDuration / 3600)}h` : `${Math.floor(totalDuration / 60)}m`}
+          </p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Total Time</p>
+        </div>
+      </div>
+
+      {/* Per-exercise breakdown */}
+      {exerciseBreakdown.length > 1 && (
+        <>
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">By Exercise</h2>
+          <div className="space-y-2 mb-6">
+            {exerciseBreakdown.map((ex) => (
+              <div key={ex.type} className="drop-card flex items-center justify-between px-4 py-3.5">
+                <div>
+                  <p className="text-gray-900 font-bold text-sm">{ex.label}</p>
+                  <p className="text-gray-400 text-xs">{ex.sessions} sessions</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-900 font-black">{ex.reps.toLocaleString()} reps</p>
+                  <p className="text-[#e8450a] text-xs font-semibold">{Math.round(ex.calories)} cal</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Daily challenge */}
       <div className="drop-card p-5 mb-6">
@@ -198,14 +236,14 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-gray-400 text-xs">
                       {new Date(w.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {" · "}
+                      {getExerciseConfig(w.exerciseType).labelPlural}
                     </p>
                     <p className="text-gray-900 font-black text-lg">{w.count} reps</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-400 text-xs">
-                      {Math.floor(w.duration / 60)}:{(w.duration % 60).toString().padStart(2, "0")}
-                    </p>
-                    <p className="text-[#e8450a] font-bold text-sm">{w.averageFormScore}% form</p>
+                    <p className="text-[#e8450a] font-bold text-sm">{caloriesForReps(w.exerciseType, w.count)} cal</p>
+                    <p className="text-gray-400 text-xs">{w.averageFormScore}% form</p>
                   </div>
                 </div>
               ))}

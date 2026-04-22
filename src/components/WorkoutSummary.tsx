@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { ExerciseType } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
+import { caloriesForReps } from "@/lib/calories";
 import { getTodaysChallenge, getChallengeProgress } from "@/lib/challenges";
 
 interface WorkoutSummaryProps {
@@ -46,6 +47,7 @@ function getShareText(count: number, grade: string, exerciseLabel: string): stri
 export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, isGuest, onSignUp, onRetrySave, onFeedback, todaysWorkoutCounts }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
+  const cals = caloriesForReps(exerciseType, count);
   const [shared, setShared] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
 
@@ -122,18 +124,22 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-6">
           <div className="text-center">
             <p className="text-neutral-500 text-[10px] uppercase tracking-widest mb-1">Duration</p>
-            <p className="text-xl font-bold text-white">{formatTime(duration)}</p>
+            <p className="text-lg font-bold text-white">{formatTime(duration)}</p>
           </div>
           <div className="text-center">
             <p className="text-neutral-500 text-[10px] uppercase tracking-widest mb-1">Grade</p>
-            <p className={`text-xl font-bold ${gradeInfo.color}`}>{gradeInfo.grade}</p>
+            <p className={`text-lg font-bold ${gradeInfo.color}`}>{gradeInfo.grade}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-neutral-500 text-[10px] uppercase tracking-widest mb-1">Calories</p>
+            <p className="text-lg font-bold text-orange-400">{cals}</p>
           </div>
           <div className="text-center">
             <p className="text-neutral-500 text-[10px] uppercase tracking-widest mb-1">Pace</p>
-            <p className="text-xl font-bold text-white">{repsPerMinute}<span className="text-sm text-neutral-500">/m</span></p>
+            <p className="text-lg font-bold text-white">{repsPerMinute}<span className="text-xs text-neutral-500">/m</span></p>
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import { User, WorkoutSession, LeaderboardEntry, ExerciseType, LeaderboardPeriod
 import { createClient } from "@/lib/supabase";
 import { debugLog, debugError, debugWarn } from "@/lib/debug-log";
 import { periodStart } from "@/lib/period";
+import { caloriesForReps } from "@/lib/calories";
 
 function getSupabase() {
   return createClient();
@@ -155,16 +156,17 @@ export async function saveWorkout(workout: WorkoutSession): Promise<void> {
 export async function getLeaderboard(
   friendsOnly: boolean = false,
   currentUserId?: string,
-  exerciseType?: ExerciseType,
+  exerciseType?: ExerciseType | "all",
   period: LeaderboardPeriod = "all"
 ): Promise<LeaderboardEntry[]> {
-  // "all" uses the precomputed Supabase view for speed.
+  const exType = exerciseType === "all" ? undefined : exerciseType;
+  // "all" period uses the precomputed Supabase view for speed.
   // Time-scoped periods aggregate the workouts table client-side so they
   // stay accurate without a schema migration.
   if (period === "all") {
-    return getLeaderboardAllTime(friendsOnly, currentUserId, exerciseType);
+    return getLeaderboardAllTime(friendsOnly, currentUserId, exType);
   }
-  return getLeaderboardForPeriod(period, friendsOnly, currentUserId, exerciseType);
+  return getLeaderboardForPeriod(period, friendsOnly, currentUserId, exType);
 }
 
 async function getLeaderboardAllTime(
@@ -189,19 +191,61 @@ async function getLeaderboardAllTime(
   const { data } = await query;
   if (!data) return [];
 
-  let entries: LeaderboardEntry[] = data
-    .map((row: Record<string, unknown>) => ({
-      userId: row.user_id as string,
-      username: row.username as string,
-      displayName: row.display_name as string,
-      avatarColor: row.avatar_color as string,
-      avatarUrl: (row.avatar_url as string) ?? null,
-      totalReps: row.total_reps as number,
-      bestSession: row.best_session as number,
-      averageForm: row.average_form as number,
-      workoutCount: row.workout_count as number,
-      streak: 0, // computed client-side for now
-    }));
+  // When no exercise filter is set, aggregate rows across exercise types per user
+  type RawRow = {
+    user_id: string; username: string; display_name: string;
+    avatar_color: string; avatar_url: string | null; exercise_type: string | null;
+    total_reps: number; best_session: number; average_form: number; workout_count: number;
+  };
+
+  let entries: LeaderboardEntry[];
+  if (!exerciseType) {
+    const byUser = new Map<string, LeaderboardEntry>();
+    for (const row of data as RawRow[]) {
+      const uid = row.user_id;
+      const exType = (row.exercise_type as ExerciseType) ?? "pushup";
+      const cals = caloriesForReps(exType, row.total_reps ?? 0);
+      const prev = byUser.get(uid);
+      if (prev) {
+        prev.totalReps += row.total_reps ?? 0;
+        prev.totalCalories += cals;
+        prev.bestSession = Math.max(prev.bestSession, row.best_session ?? 0);
+        prev.workoutCount += row.workout_count ?? 0;
+      } else {
+        byUser.set(uid, {
+          userId: uid,
+          username: row.username,
+          displayName: row.display_name,
+          avatarColor: row.avatar_color,
+          avatarUrl: row.avatar_url ?? null,
+          totalReps: row.total_reps ?? 0,
+          totalCalories: cals,
+          bestSession: row.best_session ?? 0,
+          averageForm: row.average_form ?? 0,
+          workoutCount: row.workout_count ?? 0,
+          streak: 0,
+        });
+      }
+    }
+    entries = Array.from(byUser.values()).sort((a, b) => b.totalReps - a.totalReps);
+  } else {
+    entries = data.map((row: Record<string, unknown>) => {
+      const reps = (row.total_reps as number) ?? 0;
+      return {
+        userId: row.user_id as string,
+        username: row.username as string,
+        displayName: row.display_name as string,
+        avatarColor: row.avatar_color as string,
+        avatarUrl: (row.avatar_url as string) ?? null,
+        totalReps: reps,
+        totalCalories: caloriesForReps(exerciseType, reps),
+        bestSession: (row.best_session as number) ?? 0,
+        averageForm: (row.average_form as number) ?? 0,
+        workoutCount: (row.workout_count as number) ?? 0,
+        streak: 0,
+      };
+    });
+  }
 
   if (friendsOnly && currentUserId) {
     const friendIds = await getFriendIds(currentUserId);
@@ -254,16 +298,19 @@ async function getLeaderboardForPeriod(
   }
 
   // Aggregate per user.
-  type Agg = { totalReps: number; bestSession: number; formSum: number; workoutCount: number };
+  type Agg = { totalReps: number; totalCalories: number; bestSession: number; formSum: number; workoutCount: number };
   const byUser = new Map<string, Agg>();
-  for (const row of data as { user_id: string; count: number; average_form_score: number }[]) {
+  for (const row of data as { user_id: string; count: number; average_form_score: number; exercise_type?: string }[]) {
+    const exType = (row.exercise_type as ExerciseType) ?? "pushup";
     const prev = byUser.get(row.user_id) ?? {
       totalReps: 0,
+      totalCalories: 0,
       bestSession: 0,
       formSum: 0,
       workoutCount: 0,
     };
     prev.totalReps += row.count ?? 0;
+    prev.totalCalories += caloriesForReps(exType, row.count ?? 0);
     prev.bestSession = Math.max(prev.bestSession, row.count ?? 0);
     prev.formSum += row.average_form_score ?? 0;
     prev.workoutCount += 1;
@@ -301,6 +348,7 @@ async function getLeaderboardForPeriod(
         avatarColor: p?.avatar_color ?? "#6b7280",
         avatarUrl: p?.avatar_url ?? null,
         totalReps: agg.totalReps,
+        totalCalories: agg.totalCalories,
         bestSession: agg.bestSession,
         averageForm: agg.workoutCount > 0 ? Math.round(agg.formSum / agg.workoutCount) : 0,
         workoutCount: agg.workoutCount,
@@ -344,6 +392,7 @@ async function buildEmptyEntriesForUsers(userIds: string[]): Promise<Leaderboard
     avatarColor: p.avatar_color,
     avatarUrl: p.avatar_url ?? null,
     totalReps: 0,
+    totalCalories: 0,
     bestSession: 0,
     averageForm: 0,
     workoutCount: 0,

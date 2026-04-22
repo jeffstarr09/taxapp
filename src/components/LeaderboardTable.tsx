@@ -60,10 +60,15 @@ export default function LeaderboardTable({ entries, currentUserId, startRank = 0
               <p className="text-gray-400 text-xs">@{entry.username}</p>
             </div>
 
-            {/* Reps */}
-            <p className="text-[#e8450a] font-bold tabular-nums shrink-0">
-              {entry.totalReps.toLocaleString()}
-            </p>
+            {/* Stats */}
+            <div className="text-right shrink-0">
+              <p className="text-[#e8450a] font-bold tabular-nums">
+                {entry.totalReps.toLocaleString()} <span className="text-xs font-medium text-gray-400">reps</span>
+              </p>
+              <p className="text-xs text-gray-400 tabular-nums">
+                {Math.round(entry.totalCalories).toLocaleString()} cal
+              </p>
+            </div>
           </div>
         );
       })}
