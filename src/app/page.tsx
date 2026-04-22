@@ -14,7 +14,6 @@ import {
 import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
 import { computeStreak, streakMessage, StreakInfo } from "@/lib/streaks";
 import { totalCalories } from "@/lib/calories";
-import { getCurrentMonthlyChallenge, getMonthlyChallengeProgress, MonthlyChallengeProgress } from "@/lib/monthly-challenge";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
 import LegalFooter from "@/components/LegalFooter";
 
@@ -44,7 +43,7 @@ export default function HomePage() {
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
   const [todaysChallenge, setTodaysChallenge] = useState<ReturnType<typeof getTodaysChallenge> | null>(null);
-  const [monthlyProgress, setMonthlyProgress] = useState<MonthlyChallengeProgress | null>(null);
+
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
 
   const [pendingSaved, setPendingSaved] = useState(false);
@@ -92,9 +91,6 @@ export default function HomePage() {
         const calories = totalCalories(userWorkouts);
         setStats({ total, sessions: userWorkouts.length, calories });
         setStreakInfo(computeStreak(userWorkouts));
-
-        const monthlyChallenge = getCurrentMonthlyChallenge();
-        setMonthlyProgress(getMonthlyChallengeProgress(monthlyChallenge, userWorkouts));
 
         const challenge = getTodaysChallenge();
         setTodaysChallenge(challenge);
@@ -289,44 +285,24 @@ export default function HomePage() {
         </>
       )}
 
-      {/* Monthly Challenge + Reward */}
-      {monthlyProgress && (
-        <>
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-            Monthly Challenge
-          </h2>
-          <div className="drop-card p-5 mb-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex-1">
-                <p className="font-bold text-gray-900">{getCurrentMonthlyChallenge().title}</p>
-                <p className="text-gray-400 text-sm">{getCurrentMonthlyChallenge().description}</p>
-              </div>
-              <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-lg shrink-0">
-                {monthlyProgress.daysLeft}d left
-              </span>
+      {/* Rewards CTA */}
+      {profile && (
+        <Link href="/rewards" className="block drop-card p-4 mb-6 group">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#e8450a]/10 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-[#e8450a]" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" d="M5.25 2.25a3 3 0 0 0-3 3v4.318a3 3 0 0 0 .879 2.121l9.58 9.581c.92.92 2.39.986 3.38.152l.094-.082 4.5-4.5a2.396 2.396 0 0 0 .07-3.472L11.182 4.07A3 3 0 0 0 9.061 3.19L5.25 2.25ZM7.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" clipRule="evenodd" />
+              </svg>
             </div>
-            <div className="flex items-center justify-between text-sm mb-4">
-              <span className="text-gray-400">Your calories this month</span>
-              <span className="font-bold text-[#e8450a] text-lg">
-                {Math.round(monthlyProgress.currentCalories).toLocaleString()} <span className="text-xs text-gray-400 font-medium">cal</span>
-              </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-sm">Active Challenges</p>
+              <p className="text-gray-400 text-xs">Compete to win products from top brands</p>
             </div>
-
-            {/* Reward card */}
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center gap-4">
-              <img
-                src={getCurrentMonthlyChallenge().reward.imageUrl}
-                alt={getCurrentMonthlyChallenge().reward.name}
-                className="w-16 h-16 rounded-lg object-contain shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">{getCurrentMonthlyChallenge().reward.brand}</p>
-                <p className="text-sm font-bold text-gray-900 leading-tight">{getCurrentMonthlyChallenge().reward.name}</p>
-                <p className="text-xs text-[#e8450a] font-semibold mt-0.5">Value: {getCurrentMonthlyChallenge().reward.value}</p>
-              </div>
-            </div>
+            <svg className="w-5 h-5 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
           </div>
-        </>
+        </Link>
       )}
 
       {/* Recent Activity */}
