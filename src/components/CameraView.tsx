@@ -6,6 +6,7 @@ import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps, is
 import { analyzeSitup, resetSitupAnalyzer, getSitupAverageFormScore, getSitupRepTimestamps, isSitupAnalyzerReady } from "@/lib/situp-analyzer";
 import { analyzeSquat, resetSquatAnalyzer, getSquatAverageFormScore, getSquatRepTimestamps, isSquatAnalyzerReady } from "@/lib/squat-analyzer";
 import { PoseKeypoint, ExerciseState, ExerciseType } from "@/types";
+import { getExerciseConfig } from "@/lib/exercise-config";
 
 interface CameraViewProps {
   isActive: boolean;
@@ -283,8 +284,8 @@ export default function CameraView({ isActive, exerciseType = "pushup", onUpdate
       {showGuide && !loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 overflow-hidden">
           <img
-            src="/pushup-guide.png"
-            alt="Align with the guide to start tracking push-ups"
+            src={getExerciseConfig(exerciseType).guideImage}
+            alt={`Align with the guide to start tracking ${getExerciseConfig(exerciseType).labelPlural.toLowerCase()}`}
             style={
               isLandscape
                 ? { width: "100%", height: "auto", flexShrink: 0 }

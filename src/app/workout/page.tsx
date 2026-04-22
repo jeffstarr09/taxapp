@@ -436,7 +436,7 @@ export default function WorkoutPage() {
       {/* Workout setup illustration */}
       <div className="rounded-2xl mb-8 overflow-hidden">
         <img
-          src="/workout-setup.png"
+          src={exerciseConfig.setupImage}
           alt={`${exerciseConfig.label} position guide`}
           className="w-full h-auto object-contain"
         />
