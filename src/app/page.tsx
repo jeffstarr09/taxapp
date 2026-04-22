@@ -299,27 +299,21 @@ export default function HomePage() {
             <div className="flex items-start gap-4 mb-4">
               <div className="flex-1">
                 <p className="font-bold text-gray-900">{getCurrentMonthlyChallenge().title}</p>
-                <p className="text-gray-400 text-sm">Burn {monthlyProgress.targetCalories.toLocaleString()} calories to earn a reward</p>
+                <p className="text-gray-400 text-sm">{getCurrentMonthlyChallenge().description}</p>
               </div>
               <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-lg shrink-0">
                 {monthlyProgress.daysLeft}d left
               </span>
             </div>
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-gray-400">Progress</span>
-              <span className="font-bold text-gray-900">
-                {Math.round(monthlyProgress.currentCalories).toLocaleString()} / {monthlyProgress.targetCalories.toLocaleString()} cal
+            <div className="flex items-center justify-between text-sm mb-4">
+              <span className="text-gray-400">Your calories this month</span>
+              <span className="font-bold text-[#e8450a] text-lg">
+                {Math.round(monthlyProgress.currentCalories).toLocaleString()} <span className="text-xs text-gray-400 font-medium">cal</span>
               </span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
-              <div
-                className={`h-full rounded-full transition-all ${monthlyProgress.completed ? "bg-green-500" : "bg-[#e8450a]"}`}
-                style={{ width: `${monthlyProgress.percent}%` }}
-              />
             </div>
 
             {/* Reward card */}
-            <div className={`rounded-xl border p-4 flex items-center gap-4 ${monthlyProgress.completed ? "border-green-500/30 bg-green-50" : "border-gray-100 bg-gray-50"}`}>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center gap-4">
               <img
                 src={getCurrentMonthlyChallenge().reward.imageUrl}
                 alt={getCurrentMonthlyChallenge().reward.name}
@@ -330,9 +324,6 @@ export default function HomePage() {
                 <p className="text-sm font-bold text-gray-900 leading-tight">{getCurrentMonthlyChallenge().reward.name}</p>
                 <p className="text-xs text-[#e8450a] font-semibold mt-0.5">Value: {getCurrentMonthlyChallenge().reward.value}</p>
               </div>
-              {monthlyProgress.completed && (
-                <span className="text-green-500 text-xs font-bold shrink-0">Earned!</span>
-              )}
             </div>
           </div>
         </>
