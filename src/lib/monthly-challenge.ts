@@ -34,14 +34,14 @@ export function getCurrentMonthlyChallenge(): MonthlyChallenge {
   return {
     id: `${now.getFullYear()}-${now.getMonth()}`,
     title: `${monthNames[now.getMonth()]} Challenge`,
-    description: `Burn 2,000 calories this month to earn a reward`,
+    description: `Burn the most calories this month to earn a reward`,
     targetCalories: 2000,
     month: now.getMonth(),
     year: now.getFullYear(),
     reward: {
       name: "Grass-Fed Whey Protein Isolate",
       brand: "NOBULL",
-      imageUrl: "https://nobullproject.com/cdn/shop/files/Whey_Protein_Powder_Chocolate_Front.png?v=1727986408&width=800",
+      imageUrl: "/nobull.png",
       value: "$60",
     },
   };
