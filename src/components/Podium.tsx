@@ -53,9 +53,12 @@ export default function Podium({ entries, currentUserId }: PodiumProps) {
               {entry.displayName}
             </p>
 
-            {/* Reps */}
+            {/* Stats */}
             <p className="text-[#e8450a] font-bold text-sm tabular-nums">
-              {entry.totalReps.toLocaleString()}
+              {entry.totalReps.toLocaleString()} <span className="text-[10px] font-medium text-gray-400">reps</span>
+            </p>
+            <p className="text-[10px] text-gray-400 tabular-nums -mt-0.5">
+              {Math.round(entry.totalCalories).toLocaleString()} cal
             </p>
 
             {/* Podium block */}

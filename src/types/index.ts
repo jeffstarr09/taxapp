@@ -31,6 +31,7 @@ export interface LeaderboardEntry {
   avatarColor: string;
   avatarUrl: string | null;
   totalReps: number;
+  totalCalories: number;
   bestSession: number;
   averageForm: number;
   workoutCount: number;
