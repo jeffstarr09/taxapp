@@ -8,6 +8,8 @@ export interface ExerciseConfig {
   description: string;
   setupTips: string[];
   cameraAngle: string;
+  setupImage: string;
+  guideImage: string;
   available: boolean; // false = coming soon
 }
 
@@ -25,6 +27,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
       "Go all the way down & up",
     ],
     cameraAngle: "Side view — full body in frame",
+    setupImage: "/workout-setup.png",
+    guideImage: "/pushup-guide.png",
     available: true,
   },
   pullup: {
@@ -40,6 +44,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
       "Full hang to chin over bar",
     ],
     cameraAngle: "Front or side view — full body in frame",
+    setupImage: "/workout-setup.png",
+    guideImage: "/pushup-guide.png",
     available: false,
   },
   squat: {
@@ -55,6 +61,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
       "Go below parallel for full credit",
     ],
     cameraAngle: "Side view — full body in frame",
+    setupImage: "/squat.png",
+    guideImage: "/squat.png",
     available: true,
   },
   situp: {
@@ -70,6 +78,8 @@ export const EXERCISE_CONFIGS: Record<ExerciseType, ExerciseConfig> = {
       "Full range of motion — chest to knees",
     ],
     cameraAngle: "Side view — full body in frame",
+    setupImage: "/situp.png",
+    guideImage: "/situp.png",
     available: true,
   },
 };
