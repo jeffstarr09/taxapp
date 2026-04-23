@@ -6,6 +6,7 @@ import { ExerciseType } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
 import { caloriesForReps } from "@/lib/calories";
 import { getTodaysChallenge, getChallengeProgress } from "@/lib/challenges";
+import { createChallenge, getChallengeUrl } from "@/lib/challenges-1v1";
 
 interface WorkoutSummaryProps {
   count: number;
@@ -19,6 +20,8 @@ interface WorkoutSummaryProps {
   isGuest?: boolean;
   onSignUp?: () => void;
   onRetrySave?: () => void;
+  userId?: string;
+  displayName?: string;
   onFeedback?: (feedback: {
     rating: "accurate" | "overcounted" | "undercounted";
   }) => void;
@@ -44,11 +47,12 @@ function getShareText(count: number, grade: string, exerciseLabel: string): stri
   return `I just dropped ${count} ${exerciseLabel.toLowerCase()} and scored ${grade} form on DROP — the AI workout counter. Think you can beat that?`;
 }
 
-export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, isGuest, onSignUp, onRetrySave, onFeedback, todaysWorkoutCounts }: WorkoutSummaryProps) {
+export default function WorkoutSummary({ count, duration, averageForm, exerciseType = "pushup", onClose, saved, saving, saveError, isGuest, onSignUp, onRetrySave, userId, displayName, onFeedback, todaysWorkoutCounts }: WorkoutSummaryProps) {
   const gradeInfo = getGrade(averageForm);
   const repsPerMinute = duration > 0 ? ((count / duration) * 60).toFixed(1) : "0";
   const cals = caloriesForReps(exerciseType, count);
   const [shared, setShared] = useState(false);
+  const [challengeSent, setChallengeSent] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
 
   // Daily challenge progress
@@ -252,6 +256,33 @@ export default function WorkoutSummary({ count, duration, averageForm, exerciseT
             </svg>
           </button>
         </div>
+
+        {/* Challenge a friend */}
+        {userId && !isGuest && (
+          <button
+            onClick={() => {
+              const c = createChallenge(userId, displayName || "Someone", exerciseType, count);
+              const url = getChallengeUrl(c.id);
+              trackEvent("challenge_created", { reps: count, exerciseType });
+              if (navigator.share) {
+                navigator.share({
+                  title: `DROP Challenge — ${count} ${config.labelPlural}`,
+                  text: `${displayName || "Someone"} challenged you to do ${count} ${config.labelPlural.toLowerCase()} on DROP!`,
+                  url,
+                }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(url).catch(() => {});
+              }
+              setChallengeSent(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 mb-3 bg-[#e8450a] text-white rounded-xl font-bold text-sm hover:bg-[#d03d08] transition"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+            </svg>
+            {challengeSent ? "Challenge Sent!" : "Challenge a Friend"}
+          </button>
+        )}
 
         {/* Save status */}
         <div className="mb-4">

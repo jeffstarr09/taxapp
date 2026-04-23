@@ -14,9 +14,10 @@ import { totalCalories, caloriesForReps } from "@/lib/calories";
 import Avatar from "@/components/Avatar";
 import AvatarUpload from "@/components/AvatarUpload";
 import LegalFooter from "@/components/LegalFooter";
+import { getReferralUrl } from "@/lib/referrals";
 
 export default function ProfilePage() {
-  const { profile, user, loading: authLoading, signOut, refreshProfile } = useAuth();
+  const { profile, user, loading: authLoading, signOut, deleteAccount, refreshProfile } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -26,6 +27,8 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (authLoading || !profile) return;
@@ -288,6 +291,48 @@ export default function ProfilePage() {
         </p>
       )}
 
+      {/* Invite friends */}
+      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Invite Friends</h2>
+      <div className="drop-card p-5 mb-6">
+        <p className="text-gray-700 text-sm mb-1 font-medium">Challenge your friends to join DROP</p>
+        <p className="text-gray-400 text-xs mb-3">Share your invite link and compete together.</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            readOnly
+            value={getReferralUrl(profile.id)}
+            className="flex-1 px-3 py-2.5 bg-gray-50 text-gray-600 rounded-lg border border-gray-200 text-xs font-mono truncate"
+          />
+          <button
+            onClick={() => {
+              const url = getReferralUrl(profile.id);
+              if (navigator.share) {
+                navigator.share({ title: "Join me on DROP", text: "Try DROP — the AI-powered workout counter!", url });
+              } else {
+                navigator.clipboard.writeText(url);
+              }
+            }}
+            className="px-4 py-2.5 bg-[#e8450a] text-white rounded-lg font-bold text-xs shrink-0"
+          >
+            Share
+          </button>
+        </div>
+      </div>
+
+      {/* Shareable profile link */}
+      <div className="drop-card p-4 mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-gray-700 text-sm font-medium">Your public profile</p>
+          <p className="text-[#e8450a] text-xs font-mono">dropfit.app/u/{profile.username}</p>
+        </div>
+        <button
+          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`)}
+          className="px-3 py-2 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium hover:bg-gray-200 transition"
+        >
+          Copy
+        </button>
+      </div>
+
       {/* Settings — collapsible */}
       <div className="drop-card overflow-hidden mb-8">
         <button
@@ -362,6 +407,46 @@ export default function ProfilePage() {
             >
               Sign Out
             </button>
+
+            {/* Delete account */}
+            <div className="pt-4 border-t border-gray-100">
+              {!deleteConfirm ? (
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="w-full py-3 text-gray-400 text-sm font-medium"
+                >
+                  Delete Account
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-red-500 text-xs text-center">
+                    This will permanently delete your account, all workouts, and stats. This cannot be undone.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      setDeleting(true);
+                      const result = await deleteAccount();
+                      if (result.error) {
+                        setError(result.error);
+                        setDeleting(false);
+                      } else {
+                        router.push("/");
+                      }
+                    }}
+                    disabled={deleting}
+                    className="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting..." : "Yes, Delete My Account"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(false)}
+                    className="w-full py-2 text-gray-400 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

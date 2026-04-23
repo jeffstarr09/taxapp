@@ -391,6 +391,8 @@ export default function WorkoutPage() {
       saving={saving}
       saveError={saveError}
       isGuest={isGuest}
+      userId={profile?.id}
+      displayName={profile?.display_name}
       onSignUp={handleSignUpToSave}
       onRetrySave={handleRetrySave}
       onFeedback={handleFeedback}
