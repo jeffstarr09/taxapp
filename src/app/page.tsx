@@ -16,17 +16,8 @@ import { computeStreak, streakMessage, StreakInfo } from "@/lib/streaks";
 import { totalCalories } from "@/lib/calories";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
 import LegalFooter from "@/components/LegalFooter";
-
-function timeAgo(date: string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+import ActivityFeedCard from "@/components/ActivityFeedCard";
+import { storeReferralCode } from "@/lib/referrals";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -47,6 +38,8 @@ export default function HomePage() {
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
 
   const [pendingSaved, setPendingSaved] = useState(false);
+
+  useEffect(() => { storeReferralCode(); }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -312,31 +305,9 @@ export default function HomePage() {
             Recent Activity
           </h2>
           <div className="space-y-2 mb-6">
-            {activityFeed.slice(0, 6).map((item) => {
-              const isYou = item.userId === profile?.id;
-              return (
-                <div key={item.id} className="drop-card flex items-center gap-3 px-4 py-3.5">
-                  {item.avatarUrl ? (
-                    <img src={item.avatarUrl} alt={item.displayName} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-                      style={{ backgroundColor: item.avatarColor }}
-                    >
-                      {item.displayName.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700">
-                      <span className="font-bold text-gray-900">@{isYou ? "you" : item.username}</span>
-                      {" completed "}
-                      <span className="font-bold text-gray-900">{item.count} reps</span>
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5">{timeAgo(item.date)}</p>
-                  </div>
-                </div>
-              );
-            })}
+            {activityFeed.slice(0, 6).map((item) => (
+              <ActivityFeedCard key={item.id} item={item} currentUserId={profile?.id} />
+            ))}
           </div>
         </>
       )}

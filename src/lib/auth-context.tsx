@@ -22,7 +22,9 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string, displayName: string, avatarColor: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
+  signInWithApple: () => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -120,12 +122,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   };
 
+  const signInWithApple = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) return { error: error.message };
+    trackEvent("user_login_apple");
+    return { error: null };
+  };
+
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/reset`,
     });
     if (error) return { error: error.message };
     return { error: null };
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return { error: "Not signed in" };
+    try {
+      await supabase.from("workouts").delete().eq("user_id", user.id);
+      await supabase.from("analytics_events").delete().eq("user_id", user.id);
+      await supabase.from("profiles").delete().eq("id", user.id);
+      trackEvent("user_account_deleted");
+      await supabase.auth.signOut();
+      setProfile(null);
+      return { error: null };
+    } catch {
+      return { error: "Failed to delete account. Please try again." };
+    }
   };
 
   const signOut = async () => {
@@ -148,7 +177,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signIn,
         signInWithGoogle,
+        signInWithApple,
         resetPassword,
+        deleteAccount,
         signOut,
         refreshProfile,
       }}
