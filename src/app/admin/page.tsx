@@ -308,6 +308,12 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          <a
+            href="/admin/label"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-drop-600 text-white hover:bg-drop-700 transition"
+          >
+            ML Labels
+          </a>
           {[7, 14, 30, 90].map((d) => (
             <button
               key={d}
