@@ -20,6 +20,7 @@ import {
 } from "@/lib/sounds";
 import { storePendingWorkout } from "@/lib/pending-workout";
 import { resetTelemetry, finishSession, saveTelemetrySession, updateSessionFeedback } from "@/lib/telemetry";
+import { startCapture, stopCapture, uploadSequence } from "@/lib/keypoint-capture";
 import { getActiveAnalyzerThresholds, getAverageFormScore, getRepTimestamps } from "@/lib/pushup-analyzer";
 import { debugLog, debugError } from "@/lib/debug-log";
 import { getCalibrationProfile } from "@/lib/calibration";
@@ -205,6 +206,7 @@ export default function WorkoutPage() {
     setSaveError(false);
     setTelemetrySessionId(null);
     resetTelemetry();
+    startCapture();
     setIsActive(true);
     playStartSound();
     triggerHaptic("medium");
@@ -226,6 +228,12 @@ export default function WorkoutPage() {
     setIsActive(false);
     playEndSound();
     triggerHaptic("medium");
+
+    // Upload keypoint sequence for ML training (fire-and-forget)
+    const captureData = stopCapture();
+    if (captureData && profile?.id && count > 0) {
+      uploadSequence(profile.id, undefined, exerciseType, count, captureData);
+    }
 
     // Finalize telemetry session
     const thresholds = getActiveAnalyzerThresholds();

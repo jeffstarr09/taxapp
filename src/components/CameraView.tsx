@@ -5,6 +5,7 @@ import { detectPose, initPoseDetector } from "@/lib/pose-detection";
 import { analyzePushup, resetAnalyzer, getAverageFormScore, getRepTimestamps, isAnalyzerReady } from "@/lib/pushup-analyzer";
 import { analyzeSitup, resetSitupAnalyzer, getSitupAverageFormScore, getSitupRepTimestamps, isSitupAnalyzerReady } from "@/lib/situp-analyzer";
 import { analyzeSquat, resetSquatAnalyzer, getSquatAverageFormScore, getSquatRepTimestamps, isSquatAnalyzerReady } from "@/lib/squat-analyzer";
+import { recordKeypoints } from "@/lib/keypoint-capture";
 import { PoseKeypoint, ExerciseState, ExerciseType } from "@/types";
 import { getExerciseConfig } from "@/lib/exercise-config";
 
@@ -112,6 +113,7 @@ export default function CameraView({ isActive, exerciseType = "pushup", onUpdate
     try {
       const keypoints = await detectPose(videoRef.current);
       if (keypoints.length > 0 && canvasRef.current) {
+        recordKeypoints(keypoints);
         drawKeypoints(keypoints, canvasRef.current);
         let exerciseState: ExerciseState;
         let ready: boolean;
