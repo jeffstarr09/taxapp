@@ -74,6 +74,14 @@ export function playEndSound() {
 }
 
 export function triggerHaptic(pattern: "light" | "medium" | "heavy" = "light") {
+  // Try native Capacitor haptics first, fall back to web vibration
+  if (typeof window !== "undefined" && (window as unknown as Record<string, unknown>).Capacitor) {
+    import("@capacitor/haptics").then(({ Haptics, ImpactStyle }) => {
+      const map = { light: ImpactStyle.Light, medium: ImpactStyle.Medium, heavy: ImpactStyle.Heavy };
+      Haptics.impact({ style: map[pattern] });
+    }).catch(() => {});
+    return;
+  }
   if (typeof navigator === "undefined" || !navigator.vibrate) return;
   switch (pattern) {
     case "light":

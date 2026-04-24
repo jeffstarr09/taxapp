@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallPrompt from "@/components/InstallPrompt";
 import PrivateBrowsingBanner from "@/components/PrivateBrowsingBanner";
+import NativeBridge from "@/components/NativeBridge";
 
 const SITE_URL = "https://dropfit.app";
 
@@ -139,6 +140,7 @@ export default function RootLayout({
             <Navbar />
             <InstallPrompt />
             <ServiceWorkerRegistrar />
+            <NativeBridge />
           </AnalyticsProvider>
         </AuthProvider>
       </body>
