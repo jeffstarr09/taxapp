@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
+import { registerPushNotifications } from "@/lib/push-notifications";
 
 interface Profile {
   id: string;
@@ -54,7 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false));
+        fetchProfile(session.user.id).then(() => {
+          registerPushNotifications(session.user.id);
+        }).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -67,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           fetchProfile(session.user.id);
+          registerPushNotifications(session.user.id);
         } else {
           setProfile(null);
         }
