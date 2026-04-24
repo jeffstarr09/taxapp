@@ -12,7 +12,8 @@ import {
   Achievement,
 } from "@/lib/achievements";
 import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
-import { computeStreak, streakMessage, StreakInfo } from "@/lib/streaks";
+import { computeStreak, StreakInfo } from "@/lib/streaks";
+import { getStreakMessage } from "@/lib/motivation";
 import { totalCalories } from "@/lib/calories";
 import { LeaderboardEntry, WorkoutSession, ActivityFeedItem } from "@/types";
 import LegalFooter from "@/components/LegalFooter";
@@ -210,7 +211,7 @@ export default function HomePage() {
         <div className="text-right">
           <p className="text-white/80 text-sm">Days</p>
           <p className="text-white/90 text-xs font-medium">
-            {streakMessage(streakInfo)}
+            {getStreakMessage(streakInfo.count, streakInfo.workedOutToday, streakInfo.isAtRisk)}
           </p>
         </div>
       </div>

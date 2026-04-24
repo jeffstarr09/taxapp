@@ -15,6 +15,7 @@ import Avatar from "@/components/Avatar";
 import AvatarUpload from "@/components/AvatarUpload";
 import LegalFooter from "@/components/LegalFooter";
 import { getReferralUrl } from "@/lib/referrals";
+import { getMotivationTier, setMotivationTier, MOTIVATION_TIERS, MotivationTier } from "@/lib/motivation";
 
 export default function ProfilePage() {
   const { profile, user, loading: authLoading, signOut, deleteAccount, refreshProfile } = useAuth();
@@ -29,11 +30,13 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [motivationTier, setMotivationTierState] = useState<MotivationTier>("motivational");
 
   useEffect(() => {
     if (authLoading || !profile) return;
     setUsername(profile.username);
     setDisplayName(profile.display_name);
+    setMotivationTierState(getMotivationTier());
 
     const loadData = async () => {
       const [w, f, lb] = await Promise.all([
@@ -331,6 +334,37 @@ export default function ProfilePage() {
         >
           Copy
         </button>
+      </div>
+
+      {/* Motivation style */}
+      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Motivation Style</h2>
+      <div className="drop-card p-1 mb-6">
+        <div className="grid grid-cols-3 gap-1">
+          {MOTIVATION_TIERS.map((tier) => (
+            <button
+              key={tier.value}
+              onClick={() => {
+                setMotivationTier(tier.value);
+                setMotivationTierState(tier.value);
+              }}
+              className={`py-3 px-2 rounded-xl text-center transition ${
+                motivationTier === tier.value
+                  ? "bg-[#e8450a] text-white shadow-sm"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <p className={`text-sm font-bold ${motivationTier === tier.value ? "text-white" : "text-gray-900"}`}>
+                {tier.value === "motivational" ? "🤗" : tier.value === "push_me" ? "😤" : "💀"}
+              </p>
+              <p className={`text-xs font-semibold mt-0.5 ${motivationTier === tier.value ? "text-white" : "text-gray-700"}`}>
+                {tier.label}
+              </p>
+              <p className={`text-[10px] mt-0.5 ${motivationTier === tier.value ? "text-white/70" : "text-gray-400"}`}>
+                {tier.description}
+              </p>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Settings — collapsible */}
