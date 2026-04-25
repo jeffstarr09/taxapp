@@ -16,6 +16,8 @@ import AvatarUpload from "@/components/AvatarUpload";
 import LegalFooter from "@/components/LegalFooter";
 import { getReferralUrl } from "@/lib/referrals";
 import { getMotivationTier, setMotivationTier, MOTIVATION_TIERS, MotivationTier } from "@/lib/motivation";
+import { syncMotivationTierToProfile } from "@/lib/notification-prefs";
+import NotificationSettings from "@/components/NotificationSettings";
 
 export default function ProfilePage() {
   const { profile, user, loading: authLoading, signOut, deleteAccount, refreshProfile } = useAuth();
@@ -346,6 +348,7 @@ export default function ProfilePage() {
               onClick={() => {
                 setMotivationTier(tier.value);
                 setMotivationTierState(tier.value);
+                syncMotivationTierToProfile(profile.id, tier.value);
               }}
               className={`py-3 px-2 rounded-xl text-center transition ${
                 motivationTier === tier.value
@@ -365,6 +368,12 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Notifications */}
+      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notifications</h2>
+      <div className="mb-6">
+        <NotificationSettings userId={profile.id} />
       </div>
 
       {/* Settings — collapsible */}
