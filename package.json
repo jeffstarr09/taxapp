@@ -5,13 +5,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:mobile": "BUILD_TARGET=mobile next build",
     "start": "next start",
     "lint": "next lint",
     "cap:sync": "npx cap sync ios",
     "cap:open": "npx cap open ios",
-    "cap:build": "npx cap sync ios && npx cap open ios"
+    "cap:build": "npm run build:mobile && npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1",
