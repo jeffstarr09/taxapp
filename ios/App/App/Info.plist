@@ -49,6 +49,17 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>DROP uses your camera to track exercises with AI pose detection.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.dropfit.drop</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app.dropfit.drop</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

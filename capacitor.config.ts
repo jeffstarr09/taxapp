@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: "app.dropfit.drop",
   appName: "DROP Fitness",
   webDir: "out",
-  server: {
-    url: "https://dropfit.app",
-    cleartext: false,
-  },
   ios: {
     scheme: "DROP Fitness",
     contentInset: "automatic",

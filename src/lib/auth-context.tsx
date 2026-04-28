@@ -5,6 +5,9 @@ import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 import { registerPushNotifications } from "@/lib/push-notifications";
+import { isNative, openOAuthUrl, registerDeepLinkHandler } from "@/lib/native";
+
+const NATIVE_OAUTH_REDIRECT = "app.dropfit.drop://auth/callback";
 
 interface Profile {
   id: string;
@@ -77,7 +80,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    const cleanupDeepLink = registerDeepLinkHandler(async (url) => {
+      try {
+        const parsed = new URL(url);
+        const code = parsed.searchParams.get("code");
+        const errorParam = parsed.searchParams.get("error_description") || parsed.searchParams.get("error");
+        if (errorParam) {
+          window.location.assign(`/auth?error=${encodeURIComponent(errorParam)}`);
+          return;
+        }
+        if (!code) return;
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          window.location.assign(`/auth?error=${encodeURIComponent(error.message)}`);
+        } else {
+          window.location.assign("/");
+        }
+      } catch {
+        // Ignore malformed deep links
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      cleanupDeepLink();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -114,28 +141,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   };
 
-  const signInWithGoogle = async () => {
+  const oauthSignIn = async (provider: "google" | "apple") => {
+    if (isNative()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: NATIVE_OAUTH_REDIRECT,
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) return { error: error.message };
+      if (!data?.url) return { error: "Failed to start OAuth flow" };
+      await openOAuthUrl(data.url);
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
       },
     });
     if (error) return { error: error.message };
-    trackEvent("user_login_google");
     return { error: null };
   };
 
+  const signInWithGoogle = async () => {
+    const result = await oauthSignIn("google");
+    if (!result.error) trackEvent("user_login_google");
+    return result;
+  };
+
   const signInWithApple = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) return { error: error.message };
-    trackEvent("user_login_apple");
-    return { error: null };
+    const result = await oauthSignIn("apple");
+    if (!result.error) trackEvent("user_login_apple");
+    return result;
   };
 
   const resetPassword = async (email: string) => {
