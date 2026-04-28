@@ -70,7 +70,10 @@ export default function ProfilePage() {
 
   if (!authLoading && !user) {
     return (
-      <div className="max-w-lg mx-auto px-5 py-16 text-center">
+      <div
+        className="max-w-lg mx-auto px-5 pb-16 text-center"
+        style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}
+      >
         <div className="drop-card p-8">
           <h2 className="text-xl font-black text-gray-900 mb-2">Not Signed In</h2>
           <p className="text-gray-400 text-sm mb-6">Create an account to save workouts and compete.</p>
@@ -83,7 +86,14 @@ export default function ProfilePage() {
   }
 
   if (authLoading || !profile) {
-    return <div className="max-w-lg mx-auto px-5 py-20 text-center text-gray-400 text-sm">Loading...</div>;
+    return (
+      <div
+        className="max-w-lg mx-auto px-5 pb-20 text-center text-gray-400 text-sm"
+        style={{ paddingTop: "calc(5rem + env(safe-area-inset-top))" }}
+      >
+        Loading...
+      </div>
+    );
   }
 
   const totalReps = workouts.reduce((sum, w) => sum + w.count, 0);
@@ -114,7 +124,10 @@ export default function ProfilePage() {
   const locked = ACHIEVEMENTS.filter((a) => !unlocked.find((u) => u.id === a.id));
 
   return (
-    <div className="max-w-lg mx-auto px-5 pt-8">
+    <div
+      className="max-w-lg mx-auto px-5"
+      style={{ paddingTop: "calc(2rem + env(safe-area-inset-top))" }}
+    >
       {/* Profile header */}
       <div className="flex items-center gap-4 mb-6">
         <Avatar

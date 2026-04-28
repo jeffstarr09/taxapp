@@ -115,7 +115,10 @@ export default function HomePage() {
   // Signed-out landing
   if (!authLoading && !profile) {
     return (
-      <div className="max-w-lg mx-auto px-5 py-12">
+      <div
+        className="max-w-lg mx-auto px-5 pb-12"
+        style={{ paddingTop: "calc(3rem + env(safe-area-inset-top))" }}
+      >
         <div className="text-center mb-10">
           <img
             src="/drop-logo.png"
@@ -147,7 +150,10 @@ export default function HomePage() {
 
   // Signed-in home
   return (
-    <div className="max-w-lg mx-auto px-5 pt-8">
+    <div
+      className="max-w-lg mx-auto px-5"
+      style={{ paddingTop: "calc(2rem + env(safe-area-inset-top))" }}
+    >
       {/* Pending workout saved banner */}
       {pendingSaved && (
         <div className="mb-4 p-3 rounded-xl border border-green-500/20 bg-green-50 flex items-center gap-2">

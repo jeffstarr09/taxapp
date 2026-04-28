@@ -40,7 +40,10 @@ export default function RewardsPage() {
   const daysLeft = challenges[0]?.progress.daysLeft ?? 0;
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 pb-24">
+    <div
+      className="max-w-lg mx-auto px-4 pb-24"
+      style={{ paddingTop: "calc(1.5rem + env(safe-area-inset-top))" }}
+    >
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Rewards</h1>

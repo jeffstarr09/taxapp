@@ -145,7 +145,10 @@ export default function LeaderboardPage() {
   const monthlyChallenge = getCurrentMonthlyChallenge();
 
   return (
-    <div className="max-w-lg mx-auto px-5 pt-8">
+    <div
+      className="max-w-lg mx-auto px-5"
+      style={{ paddingTop: "calc(2rem + env(safe-area-inset-top))" }}
+    >
       <div className="flex items-baseline justify-between mb-1">
         <h1 className="text-3xl font-black text-gray-900">Leaderboard</h1>
       </div>
