@@ -8,7 +8,14 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   const isBlog = pathname?.startsWith("/blog");
 
   return (
-    <main className={`${isBlog ? "" : "pb-20"} min-h-screen`}>
+    <main
+      className="min-h-screen"
+      style={
+        isBlog
+          ? undefined
+          : { paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }
+      }
+    >
       {children}
     </main>
   );
