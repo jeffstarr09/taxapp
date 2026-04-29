@@ -6,9 +6,9 @@ const config: CapacitorConfig = {
   webDir: "out",
   ios: {
     scheme: "DROP Fitness",
-    contentInset: "automatic",
+    contentInset: "never",
     allowsLinkPreview: false,
-    scrollEnabled: false,
+    scrollEnabled: true,
   },
   plugins: {
     PushNotifications: {
