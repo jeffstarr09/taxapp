@@ -447,11 +447,11 @@ export default function WorkoutPage() {
       )}
 
       {/* Workout setup illustration */}
-      <div className="rounded-2xl mb-8 overflow-hidden">
+      <div className="rounded-2xl mb-8 overflow-hidden bg-white aspect-[16/9]">
         <img
           src={exerciseConfig.setupImage}
           alt={`${exerciseConfig.label} position guide`}
-          className="w-full h-auto object-contain"
+          className="w-full h-full object-contain"
         />
       </div>
 
