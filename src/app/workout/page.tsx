@@ -415,10 +415,7 @@ export default function WorkoutPage() {
 
   // ── Pre-workout setup view ──
   return (
-    <div
-      className="max-w-lg mx-auto px-5"
-      style={{ paddingTop: "calc(1.5rem + env(safe-area-inset-top))" }}
-    >
+    <div className="max-w-lg mx-auto px-5 pt-6">
       {/* Back link */}
       <button onClick={() => window.history.back()} className="text-gray-400 text-sm font-medium mb-6 flex items-center gap-1">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -447,7 +444,7 @@ export default function WorkoutPage() {
       )}
 
       {/* Workout setup illustration */}
-      <div className="rounded-2xl mb-8 overflow-hidden bg-white aspect-[16/9]">
+      <div className="rounded-2xl mb-8 overflow-hidden bg-white h-[240px]">
         <img
           src={exerciseConfig.setupImage}
           alt={`${exerciseConfig.label} position guide`}

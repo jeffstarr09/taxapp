@@ -13,7 +13,10 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
       style={
         isBlog
           ? undefined
-          : { paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }
+          : {
+              paddingTop: "env(safe-area-inset-top)",
+              paddingBottom: "calc(5rem + env(safe-area-inset-bottom))",
+            }
       }
     >
       {children}
