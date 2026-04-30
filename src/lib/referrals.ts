@@ -13,8 +13,11 @@ export function getReferralCode(userId: string): string {
 
 export function getReferralUrl(userId: string): string {
   const code = getReferralCode(userId);
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://dropfit.app";
-  return `${origin}/?ref=${code}`;
+  // Always point recipients at the production website, not the in-app
+  // origin. Inside the iOS app, window.location.origin is
+  // "capacitor://localhost" which is meaningless to anyone the link is
+  // shared with.
+  return `https://dropfit.app/?ref=${code}`;
 }
 
 export function storeReferralCode(): void {

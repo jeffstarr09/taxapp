@@ -315,20 +315,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Shareable profile link */}
-      <div className="drop-card p-4 mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-gray-700 text-sm font-medium">Your public profile</p>
-          <p className="text-[#e8450a] text-xs font-mono">dropfit.app/u/{profile.username}</p>
-        </div>
-        <button
-          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`)}
-          className="px-3 py-2 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium hover:bg-gray-200 transition"
-        >
-          Copy
-        </button>
-      </div>
-
       {/* Motivation style */}
       <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Motivation Style</h2>
       <div className="drop-card p-1 mb-6">
