@@ -39,7 +39,7 @@ export default function LeaderboardPage() {
   const { profile, loading: authLoading } = useAuth();
 
   const [scope, setScope] = useState<Scope>("global");
-  const [period, setPeriod] = useState<LeaderboardPeriod>("week");
+  const [period, setPeriod] = useState<LeaderboardPeriod>("all");
   const [exerciseFilter, setExerciseFilter] = useState<ExFilter>("all");
   const [scopeResolved, setScopeResolved] = useState(false);
 
