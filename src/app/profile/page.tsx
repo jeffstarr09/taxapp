@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getWorkouts, updateProfile, getFriends, getLeaderboard, removeFriend } from "@/lib/storage";
-import { getUnlockedAchievements, ACHIEVEMENTS } from "@/lib/achievements";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
 import { User, WorkoutSession } from "@/types";
 import { computeStreak } from "@/lib/streaks";
@@ -120,8 +119,6 @@ export default function ProfilePage() {
   const challenge = getTodaysChallenge();
   const todayWorkouts = getTodaysWorkouts(workouts, profile.id);
   const challengeProgress = getChallengeProgress(challenge, todayWorkouts);
-  const unlocked = getUnlockedAchievements(workouts);
-  const locked = ACHIEVEMENTS.filter((a) => !unlocked.find((u) => u.id === a.id));
 
   return (
     <div
@@ -223,23 +220,6 @@ export default function ProfilePage() {
           />
         </div>
         <p className="text-gray-500 text-xs text-right mt-1">{challengeProgress.current} / {challengeProgress.target} {challenge.unit}</p>
-      </div>
-
-      {/* Achievements */}
-      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Achievements</h2>
-      <div className="grid grid-cols-4 gap-2 mb-6">
-        {unlocked.map((a) => (
-          <div key={a.id} className="bg-[#e8450a]/10 border border-[#e8450a]/20 rounded-xl p-3 flex items-center justify-center aspect-square">
-            <span className="text-2xl">{a.icon}</span>
-          </div>
-        ))}
-        {locked.slice(0, Math.max(0, 8 - unlocked.length)).map((a) => (
-          <div key={a.id} className="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center justify-center aspect-square">
-            <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-              <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
-            </svg>
-          </div>
-        ))}
       </div>
 
       {/* Recent Workouts */}
