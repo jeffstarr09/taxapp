@@ -6,12 +6,6 @@ import { useAuth } from "@/lib/auth-context";
 import { getLeaderboard, getActivityFeed, getWorkouts, saveWorkout } from "@/lib/storage";
 import { getPendingWorkout, clearPendingWorkout } from "@/lib/pending-workout";
 import { getTodaysChallenge, getTodaysWorkouts, getChallengeProgress } from "@/lib/challenges";
-import {
-  getNewAchievements,
-  dismissAllAchievements,
-  Achievement,
-} from "@/lib/achievements";
-import { playAchievementSound, triggerHaptic } from "@/lib/sounds";
 import { computeStreak, StreakInfo } from "@/lib/streaks";
 import { getStreakMessage } from "@/lib/motivation";
 import { totalCalories } from "@/lib/calories";
@@ -35,8 +29,6 @@ export default function HomePage() {
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [challengeProgress, setChallengeProgress] = useState<{ current: number; target: number; completed: boolean; percent: number } | null>(null);
   const [todaysChallenge, setTodaysChallenge] = useState<ReturnType<typeof getTodaysChallenge> | null>(null);
-
-  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
 
   const [pendingSaved, setPendingSaved] = useState(false);
 
@@ -90,27 +82,11 @@ export default function HomePage() {
         setTodaysChallenge(challenge);
         const todayWorkouts = getTodaysWorkouts(userWorkouts, profile.id);
         setChallengeProgress(getChallengeProgress(challenge, todayWorkouts));
-
-        const freshAchievements = getNewAchievements(userWorkouts);
-        if (freshAchievements.length > 0) {
-          setNewAchievements(freshAchievements);
-          playAchievementSound();
-          triggerHaptic("heavy");
-        }
       }
     };
 
     loadData();
   }, [authLoading, profile]);
-
-  const handleDismissAchievements = () => {
-    if (profile) {
-      getWorkouts(profile.id).then((userWorkouts: WorkoutSession[]) => {
-        dismissAllAchievements(userWorkouts);
-        setNewAchievements([]);
-      });
-    }
-  };
 
   // Signed-out landing
   if (!authLoading && !profile) {
@@ -165,32 +141,6 @@ export default function HomePage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Achievement toast */}
-      {newAchievements.length > 0 && (
-        <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-          {newAchievements.slice(0, 3).map((achievement) => (
-            <div
-              key={achievement.id}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-lg animate-slide-in"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{achievement.icon}</span>
-                <div>
-                  <p className="font-bold text-sm text-gray-900">{achievement.name}</p>
-                  <p className="text-gray-500 text-xs">{achievement.description}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-          <button
-            onClick={handleDismissAchievements}
-            className="w-full text-center text-gray-400 text-xs py-2"
-          >
-            Dismiss
           </button>
         </div>
       )}

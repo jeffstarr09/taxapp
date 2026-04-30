@@ -20,7 +20,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const { signIn, signUp, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
   const router = useRouter();
 
   // Surface OAuth errors bounced back from /auth/callback.
@@ -32,6 +32,15 @@ export default function AuthPage() {
     const errParam = params.get("error");
     if (errParam) setError(errParam);
   }, []);
+
+  // Bail off /auth as soon as the user has a session — covers the native
+  // Apple Sign In path (which sets the session via signInWithIdToken but
+  // doesn't navigate) plus any other auth-state transition.
+  useEffect(() => {
+    if (user && !confirmSent && !resetSent) {
+      router.replace("/");
+    }
+  }, [user, confirmSent, resetSent, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +116,12 @@ export default function AuthPage() {
     const result = await signInWithApple();
     if (result.error) {
       setError(result.error);
+      return;
     }
+    // Native Apple flow already has a session at this point; nudge the
+    // navigation in addition to the useEffect watcher above. Web flow
+    // has already navigated away to Apple's OAuth screen.
+    router.replace("/");
   };
 
   // Email confirmation sent
