@@ -8,6 +8,7 @@ import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallPrompt from "@/components/InstallPrompt";
 import PrivateBrowsingBanner from "@/components/PrivateBrowsingBanner";
 import NativeBridge from "@/components/NativeBridge";
+import NotificationPreferencePrompt from "@/components/NotificationPreferencePrompt";
 
 const SITE_URL = "https://dropfit.app";
 
@@ -142,6 +143,7 @@ export default function RootLayout({
             <InstallPrompt />
             <ServiceWorkerRegistrar />
             <NativeBridge />
+            <NotificationPreferencePrompt />
           </AnalyticsProvider>
         </AuthProvider>
       </body>
