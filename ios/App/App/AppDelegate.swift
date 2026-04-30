@@ -7,6 +7,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Static reference prevents the linker from dead-stripping the
+        // app-target plugin class. Capacitor discovers plugins via the
+        // Objective-C runtime, so the class must survive link-time DCE.
+        _ = SignInWithApplePlugin.self
         return true
     }
 

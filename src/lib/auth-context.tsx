@@ -5,7 +5,7 @@ import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 import { registerPushNotifications } from "@/lib/push-notifications";
-import { isNative, openOAuthUrl, registerDeepLinkHandler } from "@/lib/native";
+import { isNative, openOAuthUrl, registerDeepLinkHandler, nativeAppleSignIn } from "@/lib/native";
 
 const NATIVE_OAUTH_REDIRECT = "app.dropfit.drop://auth/callback";
 
@@ -142,6 +142,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const oauthSignIn = async (provider: "google" | "apple") => {
+    // Apple on iOS native: use the AuthenticationServices framework
+    // (no browser, no URL-scheme bounce — required on iPad and by
+    // Apple Review Guideline 4.8).
+    if (provider === "apple" && isNative()) {
+      try {
+        const { identityToken, rawNonce } = await nativeAppleSignIn();
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: "apple",
+          token: identityToken,
+          nonce: rawNonce,
+        });
+        if (error) return { error: error.message };
+        return { error: null };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Apple sign-in failed";
+        // User-cancelled the native sheet; treat as a no-op, not an error
+        if (/cancel/i.test(msg)) return { error: null };
+        return { error: msg };
+      }
+    }
+
     if (isNative()) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
