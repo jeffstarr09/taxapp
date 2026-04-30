@@ -16,7 +16,6 @@ import { isNative } from "@/lib/native";
 export default function NotificationPreferencePrompt() {
   const { profile, loading } = useAuth();
   const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -34,20 +33,17 @@ export default function NotificationPreferencePrompt() {
     localStorage.setItem(`drop_notif_pref_${profile.id}`, value);
   };
 
-  const handlePickTone = async (tier: MotivationTier) => {
+  const handlePickTone = (tier: MotivationTier) => {
     if (!profile?.id) return;
-    setSubmitting(tier);
     setMotivationTier(tier);
     persist(tier);
-    try {
-      await registerPushNotifications(profile.id);
-    } catch {
-      // If permission is denied at the OS level the registration call
-      // resolves false; nothing to do here. The user already chose their
-      // tone, which still applies to in-app messaging.
-    }
+    // Fire-and-forget: the iOS permission dialog will appear on top of
+    // whatever screen the user is on. Awaiting here would hang on the
+    // Simulator (APNs handshake never completes) and slow the UX on
+    // real devices for no benefit — the user has already made their
+    // choice.
+    registerPushNotifications(profile.id).catch(() => {});
     setOpen(false);
-    setSubmitting(null);
   };
 
   const handleDecline = () => {
@@ -73,24 +69,17 @@ export default function NotificationPreferencePrompt() {
             <button
               key={t.value}
               onClick={() => handlePickTone(t.value)}
-              disabled={submitting !== null}
-              className="w-full flex items-start gap-3 text-left p-4 rounded-2xl border border-gray-200 hover:border-[#e8450a] hover:bg-[#e8450a]/5 transition disabled:opacity-50"
+              className="w-full text-left p-4 rounded-2xl border border-gray-200 hover:border-[#e8450a] hover:bg-[#e8450a]/5 transition"
             >
-              <div className="flex-1">
-                <p className="font-bold text-gray-900">{t.label}</p>
-                <p className="text-gray-500 text-xs mt-0.5">{t.description}</p>
-              </div>
-              {submitting === t.value && (
-                <div className="w-4 h-4 border-2 border-[#e8450a] border-t-transparent rounded-full animate-spin shrink-0 mt-1" />
-              )}
+              <p className="font-bold text-gray-900">{t.label}</p>
+              <p className="text-gray-500 text-xs mt-0.5">{t.description}</p>
             </button>
           ))}
         </div>
 
         <button
           onClick={handleDecline}
-          disabled={submitting !== null}
-          className="w-full text-gray-400 text-sm py-3 disabled:opacity-50"
+          className="w-full text-gray-400 text-sm py-3"
         >
           No notifications, thanks
         </button>
