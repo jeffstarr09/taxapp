@@ -456,11 +456,22 @@ export async function addFriend(userId: string, friendId: string): Promise<void>
   // Insert only the current user's row (RLS only allows auth.uid() = user_id).
   // getFriendIds queries both directions, so one row is sufficient.
   debugLog("addFriend called", { userId, friendId });
-  const { error, data } = await getSupabase().from("friendships").upsert([
-    { user_id: userId, friend_id: friendId },
-  ]).select();
+  const { error, data } = await getSupabase()
+    .from("friendships")
+    .upsert(
+      [{ user_id: userId, friend_id: friendId }],
+      { onConflict: "user_id,friend_id", ignoreDuplicates: true }
+    )
+    .select();
   debugLog("addFriend result", { error: error?.message, data });
   if (error) {
+    // Postgres unique-violation (23505) means the friendship already
+    // exists; treat as a no-op so the UI can advance instead of
+    // surfacing "Something went wrong" to the user.
+    if (error.code === "23505") {
+      debugLog("addFriend: friendship already exists, treating as success");
+      return;
+    }
     debugError("addFriend failed", { code: error.code, message: error.message, details: error.details });
     throw new Error(error.message);
   }
